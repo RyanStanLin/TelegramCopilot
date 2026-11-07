@@ -10,7 +10,7 @@ public sealed class TelegramException(int code) : Exception($"Telegram request f
 {
     public int Code { get; } = code;
 }
-public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
+public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService, ITdTransport
 {
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonObject>> _pending = new();
     private readonly ConcurrentDictionary<int, byte> _clients = new();

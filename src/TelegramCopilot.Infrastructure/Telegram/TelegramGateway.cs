@@ -25,14 +25,14 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
         }
         public ConcurrentDictionary<long, JsonObject> Statuses { get; } = new();
     }
-    private readonly TdTransport _transport;
+    private readonly ITdTransport _transport;
     private readonly Database _db;
     private readonly TimeProvider _clock;
     private readonly ConcurrentDictionary<Guid, Session> _sessions = new();
     private readonly ConcurrentDictionary<Guid, (Guid AccountId, long UserId, string Identifier)> _targets = new();
     private readonly IObservationStream _observations;
     private readonly SemaphoreSlim _reconcile = new(1);
-    public TelegramGateway(TdTransport transport, Database db, TimeProvider clock, IObservationStream observations)
+    public TelegramGateway(ITdTransport transport, Database db, TimeProvider clock, IObservationStream observations)
     {
         _transport = transport; _db = db; _clock = clock; _observations = observations;
         transport.Update += OnUpdate;

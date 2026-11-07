@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddSingleton<IOperationsService, OperationsService>();
         services.AddSingleton<IObservationStream, ObservationStream>();
         services.AddSingleton<TdTransport>();
+        services.AddSingleton<ITdTransport>(p => p.GetRequiredService<TdTransport>());
         services.AddHostedService(p => p.GetRequiredService<TdTransport>());
         services.AddSingleton<ITelegramGateway, TelegramGateway>();
         services.AddSingleton<IBarkGateway, BarkGateway>();
