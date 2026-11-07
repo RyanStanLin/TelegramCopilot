@@ -1,0 +1,13 @@
+{
+  "name": "telegramcopilot-tools",
+  "private": true,
+  "scripts": {
+    "lint:css": "stylelint 'web/src/**/*.module.css'"
+  },
+  "devDependencies": {
+    "@primer/primitives": "11.10.0",
+    "@primer/stylelint-config": "13.6.0",
+    "prettier": "3.9.10",
+    "stylelint": "16.26.1"
+  }
+}

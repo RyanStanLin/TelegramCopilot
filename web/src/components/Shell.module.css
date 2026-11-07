@@ -1,0 +1,5 @@
+.header {
+  background-color: var(--bgColor-muted);
+  color: var(--fgColor-default);
+  border-bottom: var(--borderWidth-thin) solid var(--borderColor-default);
+}

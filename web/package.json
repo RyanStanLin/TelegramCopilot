@@ -1,0 +1,31 @@
+{
+  "name": "telegramcopilot-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_OPTIONS=--experimental-sqlite next dev",
+    "build": "NODE_OPTIONS=--experimental-sqlite next build --webpack",
+    "start": "NODE_OPTIONS=--experimental-sqlite node tools/start.mjs",
+    "typecheck": "tsc --noEmit",
+    "reset-passkey": "node --experimental-sqlite tools/reset-passkey.mjs",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@primer/octicons-react": "19.42.0",
+    "@primer/primitives": "11.10.0",
+    "@primer/react": "38.45.0",
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.1.0",
+    "next": "16.4.5",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}
