@@ -20,3 +20,5 @@ work/primer/
 .DS_Store
 /.paas/
 /paas.secrets.json
+__pycache__/
+*.py[cod]

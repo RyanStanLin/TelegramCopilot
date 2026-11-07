@@ -56,4 +56,18 @@ The application performs versioned compatible SQLite upgrades at startup under i
 
 ## Release evidence
 
-Actual run/SHA/release identities, HTTPS checks and the follow-up ordinary push persistence check are recorded after online verification.
+Initial production release verified on 2026-11-08:
+
+- Backend commit: `a86c1485d893481297c4dd0fabc515788e342082`.
+- Successful complete run: https://github.com/RyanStanLin/TelegramCopilot/actions/runs/42390696672
+- Release ID: `4d1fcb3fcb5eea0bd17749a58d71dd7a81f7e09c5f490f261726a3e3a8b31a47`.
+- Native artifact run: https://github.com/RyanStanLin/TelegramCopilot/actions/runs/42388812498
+- HTTPS readiness, native availability, OpenAPI, Problem Details, frontend SSR/CSS and unauthenticated proxy rejection passed. The owner registered their own Passkey and entered the console.
+
+The temporary disabled persistence fixture was logically deleted. Further follow-up push and cross-update persistence acceptance were skipped at the owner's request. This documentation commit still triggers the configured automatic pipeline; use the latest successful main run and PaaS history for current online identity.
+
+Read-only checks are available with `python3 tools/check-production.py`. Optional proof flags write only an explicitly disabled fixture and are for a separately approved update-acceptance window.
+
+Initial api image: `ghcr.io/ryanstanlin/paas-1449502662-api@sha256:cb1409e8a72cd064fcd6b82dd81a2672e1276ce1cbcafd32546ca9ed5cebea41`.
+
+Initial monitor image: `ghcr.io/ryanstanlin/paas-1449502662-monitor@sha256:ba9dda99fd88ad5cb6577454acf3f647be736e856cbe52eb97a8c1d91afa1946`.
