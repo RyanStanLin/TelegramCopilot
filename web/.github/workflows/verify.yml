@@ -1,0 +1,57 @@
+name: Verify frontend
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: application
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: RyanStanLin/TelegramCopilot
+          ref: 34cb9670d6387f05d1a98f9f438a76afb3f82695
+          path: api-fixture
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build api-fixture/src/TelegramCopilot.Api -c Release /bl:artifacts/api-fixture.binlog
+      - run: npm ci && npm run lint:css && npm run build && npm run typecheck
+        working-directory: application
+      - run: npx playwright install --with-deps chromium
+        working-directory: application
+      - name: Run isolated integration checks
+        working-directory: application
+        env:
+          NODE_OPTIONS: --experimental-sqlite
+          TELEGRAMCOPILOT_API_URL: http://127.0.0.1:5080
+          WEBAUTHN_ORIGIN: http://localhost:3000
+          WEBAUTHN_RP_ID: localhost
+        run: |
+          install -d -m 700 "$RUNNER_TEMP/api-data" "$RUNNER_TEMP/web-data"
+          DataPath="$RUNNER_TEMP/api-data" ASPNETCORE_URLS=http://127.0.0.1:5080 dotnet ../api-fixture/src/TelegramCopilot.Api/bin/Release/net10.0/TelegramCopilot.Api.dll > "$RUNNER_TEMP/api.log" 2>&1 &
+          api_pid=$!
+          WEB_DATA_PATH="$RUNNER_TEMP/web-data" npm start > "$RUNNER_TEMP/web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$api_pid" "$web_pid" 2>/dev/null || true' EXIT
+          curl --retry 30 --retry-connrefused --retry-delay 1 --fail http://127.0.0.1:5080/health/live
+          curl --retry 30 --retry-connrefused --retry-delay 1 --fail http://localhost:3000/api/auth/status
+          npm run test:e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: failure()
+        with:
+          name: frontend-failure-report
+          path: application/playwright-report
+          retention-days: 3

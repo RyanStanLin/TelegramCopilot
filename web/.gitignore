@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+data/
+*.db*
+*.tsbuildinfo
+test-results/
+playwright-report/
+.env
+.env.*
+!.env.example
+.paas/
+paas.secrets.json
+.DS_Store

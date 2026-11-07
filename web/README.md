@@ -2,12 +2,14 @@
 
 独立 Next.js App Router + TypeScript + React + Primer Product UI 前端。页面、浏览器 API 代理及 Passkey 验证运行在 Node.js 服务端；C# API 单独运行，按需求不加鉴权。
 
+生产接入见 [DEPLOYMENT.md](DEPLOYMENT.md)。此目录也是独立仓库 [TelegramCopilot-Web](https://github.com/RyanStanLin/TelegramCopilot-Web) 的根目录；在后端仓库中通过 `web` submodule 引用。
+
 ## 本地快速开始
 
 Node 24 推荐。Node 22.12 需要 experimental SQLite 标志，npm 脚本已设置。
 
 ```sh
-cd web
+ # 后端仓库先 cd web；独立前端仓库直接在根目录执行
 npm ci
 cp .env.example .env.local
 npm run dev
@@ -83,4 +85,4 @@ WEB_DATA_PATH 必须持久化。不要提交 `.env.local`、web.db 或生产日�
 
 设计依据是 Primer Product UI，非 Primer Brand。依赖固定于 package-lock，CSS Modules 与官方语义 tokens，使用 Stack、PageLayout、PageHeader、NavList、表单控件和 Table，禁用自造原生控件。研究和官方文档回退见根目录 `work/primer-docs-ledger.md`。
 
-CSS 校验在仓库根目录执行 `npm ci && npm run lint:css`。浏览器集成验证使用临时数据目录和虚拟 WebAuthn 认证器；请参考根目录 `docs/verification.md`。真实设备 Passkey 同步、Telegram 账号可见性和 Bark 手机端效果需在你的部署中确认。
+CSS 校验在前端仓库根目录执行 `npm ci && npm run lint:css`。浏览器集成验证使用临时数据目录和虚拟 WebAuthn 认证器；请参考根目录 `docs/verification.md`。真实设备 Passkey 同步、Telegram 账号可见性和 Bark 手机端效果需在你的部署中确认。
