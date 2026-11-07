@@ -7,7 +7,7 @@ using TelegramCopilot.Core.Presence;
 namespace TelegramCopilot.Infrastructure.Workers;
 
 public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRepository telemetry,
-    ITelegramGateway telegram, TimeProvider clock, ILogger<MonitorWorker> logger) : BackgroundService
+    ITelegramGateway telegram, IObservationStream observations, TimeProvider clock, ILogger<MonitorWorker> logger) : BackgroundService
 {
     private readonly Dictionary<Guid, DateTimeOffset> _next = new();
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -66,12 +66,13 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
                     {
                         var result = target.Enabled ? await telegram.ObserveAsync(target, token)
                             : new Observation(target.Id, PresenceState.Unknown, now, "MonitoringDisabled");
-                        await telemetry.RecordAsync(result, target.Name, settings.AccountId, token);
+                        observations.Publish(result with { SourceAccountId = settings.AccountId, SourceIdentifier = settings.Identifier });
                         if (result.Reason == "TargetReconfigured") lock (_next) _next[target.Id] = now.AddSeconds(1);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        await telemetry.RecordAsync(new(target.Id, PresenceState.Unknown, clock.GetUtcNow(), "ObservationFailed"), target.Name, settings.AccountId, token);
+                        observations.Publish(new(target.Id, PresenceState.Unknown, clock.GetUtcNow(), "ObservationFailed",
+                            SourceAccountId: settings.AccountId, SourceIdentifier: settings.Identifier));
                         await telemetry.EventAsync(new(0, target.Id, settings.AccountId, target.Name, EventType.Error, clock.GetUtcNow(), null,
                             ex is Telegram.TelegramException te ? $"Telegram error {te.Code}" : ex.GetType().Name), token);
                     }
@@ -87,10 +88,11 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
     }
     private async Task Receive(CancellationToken ct)
     {
-        await foreach (var observation in telegram.UpdatesAsync(ct))
+        await foreach (var observation in observations.ReadAllAsync(ct))
         {
             var target = await configs.FindAsync(observation.TargetId, ct);
-            if (target is null || !target.Enabled || observation.ObservedAt < target.UpdatedAt) continue;
+            if (target is null || observation.ObservedAt < target.UpdatedAt
+                || !target.Enabled && observation.Reason != "MonitoringDisabled") continue;
             var settings = target.Read<TargetSettings>();
             if (observation.SourceAccountId is { } account && account != settings.AccountId) continue;
             if (observation.SourceIdentifier is { } identifier && identifier != settings.Identifier) continue;

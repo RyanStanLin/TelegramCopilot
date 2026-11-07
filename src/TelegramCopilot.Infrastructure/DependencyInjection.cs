@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddSingleton<IConfigurationService, ConfigurationService>();
         services.AddSingleton<ITelemetryService, TelemetryService>();
         services.AddSingleton<IOperationsService, OperationsService>();
+        services.AddSingleton<IObservationStream, ObservationStream>();
         services.AddSingleton<TdTransport>();
         services.AddHostedService(p => p.GetRequiredService<TdTransport>());
         services.AddSingleton<ITelegramGateway, TelegramGateway>();

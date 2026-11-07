@@ -15,8 +15,10 @@ public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonObject>> _pending = new();
     private readonly ConcurrentDictionary<int, byte> _clients = new();
     public event Action<int, JsonObject>? Update;
-    public bool Available { get; private set; }
-    public string? Error { get; private set; }
+    private volatile bool _available;
+    private volatile string? _error;
+    public bool Available => _available;
+    public string? Error => _error;
     public int Create()
     {
         if (!Available) throw new InvalidOperationException("Native TDLib is unavailable. Install libtdjson or use the Docker image.");
@@ -46,7 +48,7 @@ public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
         try
         {
             TdNative.Execute("{\"@type\":\"setLogVerbosityLevel\",\"new_verbosity_level\":0}");
-            Available = true;
+            _available = true;
             DateTimeOffset? shutdownAt = null;
             while (true)
             {
@@ -73,12 +75,12 @@ public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
         }
         catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
         {
-            Error = "TDLib native library unavailable or incompatible";
+            _error = "TDLib native library unavailable or incompatible";
             logger.LogWarning("{Error}", Error);
         }
         finally
         {
-            Available = false;
+            _available = false;
             foreach (var p in _pending.Values) p.TrySetCanceled();
         }
     }, stoppingToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);

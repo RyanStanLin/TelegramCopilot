@@ -45,8 +45,9 @@ public sealed partial class TelegramGateway
         {
             s.Connection = data["state"]!["@type"]!.GetValue<string>();
             if (s.Connection != "connectionStateReady")
-                foreach (var (id, _) in _targets.Where(x => x.Value.AccountId == entry.Key))
-                    _updates.Writer.TryWrite(new(id, PresenceState.Unknown, _clock.GetUtcNow(), "ConnectionUnavailable"));
+                foreach (var (id, watch) in _targets.Where(x => x.Value.AccountId == entry.Key))
+                    _observations.Publish(new(id, PresenceState.Unknown, _clock.GetUtcNow(), "ConnectionUnavailable",
+                        SourceAccountId: entry.Key, SourceIdentifier: watch.Identifier));
         }
         if (type == "error")
         {
@@ -64,7 +65,7 @@ public sealed partial class TelegramGateway
             var userId = type == "updateUserStatus" ? data["user_id"]!.GetValue<long>() : data["user"]!["id"]!.GetValue<long>();
             var status = (type == "updateUserStatus" ? data["status"] : data["user"]!["status"])!.AsObject();
             foreach (var (id, watch) in _targets.Where(x => x.Value.AccountId == entry.Key && x.Value.UserId == userId))
-                _updates.Writer.TryWrite(ToObservation(id, status, _clock.GetUtcNow(), "TelegramUpdate")
+                _observations.Publish(ToObservation(id, status, _clock.GetUtcNow(), "TelegramUpdate")
                     with { SourceAccountId = entry.Key, SourceIdentifier = watch.Identifier });
         }
         if (type is "updateMessageSendSucceeded" or "updateMessageSendFailed")

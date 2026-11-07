@@ -40,7 +40,11 @@ public interface ITelegramGateway
     Task<AccountStatusResponse> LoginAsync(Guid accountId, LoginRequest request, CancellationToken ct);
     Task<Observation> ObserveAsync(Resource target, CancellationToken ct);
     Task<SendReceipt> SendAsync(Guid accountId, string recipient, string message, CancellationToken ct);
-    IAsyncEnumerable<Observation> UpdatesAsync(CancellationToken ct);
+}
+public interface IObservationStream
+{
+    void Publish(Observation observation);
+    IAsyncEnumerable<Observation> ReadAllAsync(CancellationToken ct);
 }
 public interface IBarkGateway
 {

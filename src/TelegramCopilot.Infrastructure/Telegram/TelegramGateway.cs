@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
-using System.Threading.Channels;
 using TelegramCopilot.Application.Contracts;
 using TelegramCopilot.Application.Ports;
 using TelegramCopilot.Core.Configuration;
@@ -16,10 +14,15 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
     {
         public Resource Config { get; } = config;
         public int ClientId { get; } = clientId;
-        public string Auth = "Starting";
-        public string Connection = "Unknown";
-        public string? Error;
-        public DateTimeOffset NotBefore;
+        public volatile string Auth = "Starting";
+        public volatile string Connection = "Unknown";
+        public volatile string? Error;
+        private long _notBeforeTicks;
+        public DateTimeOffset NotBefore
+        {
+            get => new(Interlocked.Read(ref _notBeforeTicks), TimeSpan.Zero);
+            set => Interlocked.Exchange(ref _notBeforeTicks, value.UtcTicks);
+        }
         public ConcurrentDictionary<long, JsonObject> Statuses { get; } = new();
     }
     private readonly TdTransport _transport;
@@ -27,11 +30,11 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
     private readonly TimeProvider _clock;
     private readonly ConcurrentDictionary<Guid, Session> _sessions = new();
     private readonly ConcurrentDictionary<Guid, (Guid AccountId, long UserId, string Identifier)> _targets = new();
-    private readonly Channel<Observation> _updates = Channel.CreateUnbounded<Observation>(new() { SingleReader = true });
+    private readonly IObservationStream _observations;
     private readonly SemaphoreSlim _reconcile = new(1);
-    public TelegramGateway(TdTransport transport, Database db, TimeProvider clock)
+    public TelegramGateway(TdTransport transport, Database db, TimeProvider clock, IObservationStream observations)
     {
-        _transport = transport; _db = db; _clock = clock;
+        _transport = transport; _db = db; _clock = clock; _observations = observations;
         transport.Update += OnUpdate;
     }
     public bool NativeAvailable => _transport.Available;
@@ -51,7 +54,8 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
                 foreach (var (target, info) in _targets.Where(x => x.Value.AccountId == id))
                 {
                     _targets.TryRemove(target, out _);
-                    _updates.Writer.TryWrite(new(target, PresenceState.Unknown, _clock.GetUtcNow(), "AccountReconfigured"));
+                    _observations.Publish(new(target, PresenceState.Unknown, _clock.GetUtcNow(), "AccountReconfigured",
+                        SourceAccountId: id, SourceIdentifier: info.Identifier));
                 }
             }
             if (!NativeAvailable) return;
@@ -108,10 +112,6 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
         return ToObservation(target.Id, user["status"]!.AsObject(), _clock.GetUtcNow(), "CachedReconciliation")
             with { SourceAccountId = config.AccountId, SourceIdentifier = config.Identifier };
     }
-    public async IAsyncEnumerable<Observation> UpdatesAsync([EnumeratorCancellation] CancellationToken ct)
-    {
-        await foreach (var update in _updates.Reader.ReadAllAsync(ct)) yield return update;
-    }
     private Session Required(Guid id) => _sessions.TryGetValue(id, out var s) ? s
         : throw new InvalidOperationException("Account is disabled, starting or native TDLib is unavailable.");
     public async ValueTask DisposeAsync()
@@ -122,6 +122,5 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
         while (_transport.Available && _sessions.Values.Any(x => x.Auth != "authorizationStateClosed") && _clock.GetUtcNow() < until)
             await Task.Delay(100);
         _transport.Update -= OnUpdate;
-        _updates.Writer.TryComplete();
     }
 }
