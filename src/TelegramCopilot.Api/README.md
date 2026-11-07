@@ -1,6 +1,6 @@
 # TelegramCopilot API
 
-.NET 10 Minimal API，无鉴权。默认 `http://127.0.0.1:5080`，OpenAPI 始终提供于 `/openapi/v1.json`。配置 `DataPath` 决定数据库、密钥环和 TDLib 会话存放位置。`ASPNETCORE_URLS` 可覆盖监听地址。
+.NET 10 Minimal API，无鉴权。默认 `http://127.0.0.1:5080`，OpenAPI 始终提供于 `/openapi/v1.json`。配置 `DATA_PATH`（兼容旧名 `DataPath`）决定数据库、密钥环和 TDLib 会话存放位置。`ASPNETCORE_URLS` 可覆盖监听地址。
 
 ## 运行
 
@@ -89,6 +89,7 @@ heartbeatSeconds 1–10；staleAfterSeconds 至少是心跳的两倍、最多 12
 ## 登录、健康和历史
 
 - `GET /health/live`：进程存活。
+- `GET /health/ready`：TDLib 和持久化心跳就绪时 200，否则 503 Problem Details。
 - `GET /api/health`：Healthy/Degraded、持久化心跳及 TDLib 是否可用。
 - `GET /api/accounts/{id}/status`：当前授权状态、连接状态和脱敏错误。
 - `POST /api/accounts/{id}/login`：`{"type":"code","value":"12345"}`。type 也可为 password/email/emailCode，挑战值不持久化。

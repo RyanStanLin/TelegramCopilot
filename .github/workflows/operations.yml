@@ -1,0 +1,31 @@
+name: PaaS operations
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Fixed platform operation
+        type: choice
+        options: [status, routes, route-cache, clear-route-cache, history, logs, start, stop, restart, delete, cleanup-images, redeploy, rollback, backup, backups, download-backup, restore, database-upgrade]
+        default: status
+      domain: {description: 'Cache domain (empty means all domains of this repository)', type: string}
+      service: {description: Named service, default: monitor, type: string}
+      release-id: {description: Rollback release ID, type: string}
+      image: {description: Approved database image digest, type: string}
+      backup-id: {description: Backup ID, type: string}
+      confirm: {description: 'Restore requires RESTORE <repository ID>', type: string}
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+jobs:
+  operate:
+    uses: Deploy-ryanl-in/personal-paas/.github/workflows/operate.yml@472a450fa4a7f8caca1b8b7c2b451eb7758dc442
+    with:
+      deployment-url: https://deploy.ryanl.in
+      action: ${{ inputs.action }}
+      domain: ${{ inputs.domain }}
+      service: ${{ inputs.service }}
+      release-id: ${{ inputs.release-id }}
+      image: ${{ inputs.image }}
+      backup-id: ${{ inputs.backup-id }}
+      confirm: ${{ inputs.confirm }}

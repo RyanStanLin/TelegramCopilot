@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "name": "telegramcopilot",
+  "state": "present",
+  "deployBranch": "main",
+  "services": {
+    "monitor": {
+      "type": "worker",
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/Dockerfile",
+        "publicArgs": {
+          "TDLIB_IMAGE": "ghcr.io/ryanstanlin/1449502662/tdlib@sha256:686a71791a8a811cf8ad60f86129ced90414e3114e7e7a15c5ca6d53c6d5c5b4"
+        }
+      },
+      "resources": {
+        "memoryMiB": 256,
+        "cpu": 0.8,
+        "pids": 128
+      },
+      "environment": {
+        "ASPNETCORE_URLS": "http://0.0.0.0:5080",
+        "DATA_PATH": "/data",
+        "TZ": "UTC"
+      },
+      "volumes": [
+        {
+          "name": "backend-data",
+          "target": "/data"
+        }
+      ]
+    },
+    "api": {
+      "type": "web",
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/gateway.Dockerfile"
+      },
+      "port": 8080,
+      "domain": "telegramcopilot-api.ryanl.in",
+      "health": {
+        "path": "/health/ready",
+        "status": 200
+      },
+      "resources": {
+        "memoryMiB": 32,
+        "cpu": 0.1,
+        "pids": 32
+      },
+      "dependsOn": [
+        "monitor"
+      ]
+    }
+  }
+}

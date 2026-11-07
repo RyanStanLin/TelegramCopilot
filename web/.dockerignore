@@ -1,9 +1,0 @@
-node_modules
-.next
-data
-.env*
-test-results
-playwright-report
-.git
-.paas
-paas.secrets.json

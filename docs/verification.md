@@ -76,3 +76,11 @@ docker compose --env-file .env.example -p telegramcopilot-qa down -v
 - 没有执行数天的持续运行、规模/负载测试、amd64 实机测试、物理 Passkey 设备同步测试或完整读屏审计。HTTPS/DNS/Caddy 配置已提供，没有部署到一个真实公网域名。
 - 截图检查了实际结构、表格列、日历尺寸、主题和窄屏功能。没有有效的同版本 GitHub 截图/DPR 基线，未声明像素级 1:1。
 - 没有生成代码覆盖率或运行自动 mutation 工具。代码与断言进行过人工差异审查；这些结果不等同于覆盖率或安全审计报告。
+
+## 2026-11-08 production preparation
+
+- Fixed-version official PaaS validator accepted both repository-ID-specific declarations; local helper found no missing decisions or secretRefs. Runtime admission and release remain separate from these local checks.
+- Backend Release build: zero warnings/errors; xUnit Passed: 62, Failed: 0, Skipped: 0 (artifacts/tests/paas-backend.trx).
+- Production-matched local containers: UID 10001, read-only root, dropped capabilities, no-new-privileges, memory/CPU/PID limits and bounded tmpfs. API/CLI smoke passed through the nginx gateway. Native readiness returned 200; a host without TDLib correctly returned 503 Problem Details.
+- The resource-constrained browser run exposed a deletion focus race. The fix uses Primer Dialog returnFocusRef, with cancellation returning to the trigger and deletion returning to search. The regression workflow, including the new cancellation assertion, then passed: 2 passed (46.8s). TypeScript and CSS lint also passed.
+- The native source is compiled on GitHub for amd64, then consumed by immutable digest for normal application releases. Final live release identities belong in DEPLOYMENT.md.

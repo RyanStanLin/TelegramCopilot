@@ -43,6 +43,7 @@ scp artifacts/TelegramCopilot.bundle your-user@your-server:~/
 # 服务器
 git clone ~/TelegramCopilot.bundle TelegramCopilot
 cd TelegramCopilot
+git submodule update --init --recursive
 cp .env.example .env
 chmod 600 .env
 ```

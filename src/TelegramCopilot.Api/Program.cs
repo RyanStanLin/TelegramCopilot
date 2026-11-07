@@ -8,7 +8,7 @@ using TelegramCopilot.Application.Ports;
 var builder = WebApplication.CreateBuilder(args);
 if (string.IsNullOrWhiteSpace(builder.Configuration["Urls"]))
     builder.WebHost.UseUrls("http://127.0.0.1:5080");
-var dataPath = builder.Configuration["DataPath"] ?? Path.Combine(AppContext.BaseDirectory, "data");
+var dataPath = builder.Configuration["DATA_PATH"] ?? builder.Configuration["DataPath"] ?? Path.Combine(AppContext.BaseDirectory, "data");
 Directory.CreateDirectory(dataPath);
 using var workerLock = new FileStream(Path.Combine(dataPath, "worker.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 builder.Services.AddTelegramCopilot(dataPath);

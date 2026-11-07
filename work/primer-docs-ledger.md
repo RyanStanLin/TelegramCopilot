@@ -51,3 +51,7 @@
 - https://github.com/primer/react/tree/main/packages/react/src
 - https://github.com/primer/primitives
 - https://github.com/primer/octicons
+
+## Production constraint follow-up
+
+- Under 192 MiB / 0.5 CPU and a read-only root, the browser check exposed a deletion-focus race with requestAnimationFrame. Dialog returnFocusRef was verified with the live official Primer MCP and installed public types. Confirmation now returns to the original trigger on cancellation and to the search input after deletion through that API. The existing browser workflow also checks cancellation return focus. No CSS change was needed.

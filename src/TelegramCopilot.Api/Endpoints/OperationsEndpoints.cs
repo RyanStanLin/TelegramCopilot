@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using TelegramCopilot.Application.Contracts;
 using TelegramCopilot.Application.Services;
 
@@ -9,6 +10,12 @@ public static class OperationsEndpoints
     {
         app.MapGet("/health/live", (CancellationToken ct) => TypedResults.Ok(new { status = "Alive" }))
             .WithName("Liveness").WithSummary("Process liveness; does not require Telegram credentials");
+        app.MapGet("/health/ready", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>> (IOperationsService service, CancellationToken ct) =>
+        {
+            var health = await service.HealthAsync(ct);
+            return health.Status == "Healthy" ? TypedResults.Ok(health)
+                : TypedResults.Problem(statusCode: 503, title: "Monitoring service is not ready");
+        }).WithName("Readiness").WithSummary("Requires native TDLib and a recent durable monitoring heartbeat");
         app.MapGet("/api/health", async (IOperationsService service, CancellationToken ct) => TypedResults.Ok(await service.HealthAsync(ct)))
             .WithName("Health").WithSummary("Native TDLib availability and durable worker heartbeat");
         app.MapGet("/api/accounts/{id:guid}/status", async (Guid id, IOperationsService service, CancellationToken ct) =>

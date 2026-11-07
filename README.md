@@ -2,6 +2,8 @@
 
 C# / .NET 10 的 Telegram 多账号在线状态记录、定时消息和 Bark 通知服务，配套独立 Next.js + React + Primer Web 管理界面。目标部署环境是 Debian 13；前后端分别构建和运行。
 
+生产接入见 [DEPLOYMENT.md](DEPLOYMENT.md)。前端现在通过独立 Git 仓库的 `web` submodule 引用；克隆本仓库时使用 `git clone --recurse-submodules`，或先执行 `git submodule update --init --recursive`。
+
 ## 当前功能
 
 - Core → Application → Infrastructure → API/CLI 的领域分层，官方 TDLib JSON 接口，不使用 Bot API 冒充用户登录。
