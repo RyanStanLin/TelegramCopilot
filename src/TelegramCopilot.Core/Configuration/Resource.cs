@@ -5,7 +5,7 @@ namespace TelegramCopilot.Core.Configuration;
 
 public enum ResourceKind { Accounts, Targets, Schedules, Destinations, Rules, Settings }
 public sealed record Resource(Guid Id, ResourceKind Kind, string Name, bool Enabled,
-    JsonElement Settings, long Revision, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt)
+    JsonElement Settings, long Revision, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, DateTimeOffset? DeletedAt = null)
 {
     public T Read<T>() => Settings.Deserialize<T>(JsonDefaults.Options)
         ?? throw new ArgumentException("Invalid configuration settings.");

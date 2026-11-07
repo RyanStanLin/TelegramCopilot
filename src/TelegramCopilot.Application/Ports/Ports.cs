@@ -9,7 +9,7 @@ public interface IConfigurationRepository
     Task<IReadOnlyList<Resource>> ListAsync(ResourceKind? kind, CancellationToken ct);
     Task<Resource?> FindAsync(Guid id, CancellationToken ct, bool includeDeleted = false);
     Task SaveAsync(Resource value, long? previousRevision, CancellationToken ct);
-    Task DeleteAsync(Guid id, long revision, CancellationToken ct);
+    Task DeleteAsync(Guid id, long revision, DateTimeOffset at, CancellationToken ct);
 }
 public interface ITelemetryRepository
 {

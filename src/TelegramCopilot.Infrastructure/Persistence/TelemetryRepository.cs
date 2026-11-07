@@ -16,10 +16,17 @@ public sealed partial class TelemetryRepository(Database db) : ITelemetryReposit
             await using var c = await db.Open(ct);
             using var transaction = c.BeginTransaction();
             var previous = await OpenInterval(c, o.TargetId, ct);
-            if (previous is not null && (o.ObservedAt < previous.ObservedAt || o.ObservedAt < previous.Start)) return;
-            if (previous?.State == o.State && (o.State != PresenceState.Unknown || previous.Reason == o.Reason)) return;
+            var decision = new PresenceMonitor(o.TargetId, previous).Observe(o);
+            if (decision.Effect == ObservationEffect.Ignore) return;
+            if (decision.Effect == ObservationEffect.Confirm)
+            {
+                await Database.Exec(c, "UPDATE intervals SET observed=$at WHERE id=$id", ct,
+                    ("$at", Database.Ms(o.ObservedAt)), ("$id", previous!.Id));
+                transaction.Commit();
+                return;
+            }
             var boundary = o.ObservedAt;
-            var transitionKnown = previous is not null && previous.State != PresenceState.Unknown && o.State != PresenceState.Unknown;
+            var transitionKnown = decision.BoundaryKnown;
             if (previous is not null)
             {
                 await Database.Exec(c, "UPDATE intervals SET end=$end,end_known=$known WHERE id=$id", ct,
@@ -31,11 +38,8 @@ public sealed partial class TelemetryRepository(Database db) : ITelemetryReposit
                 """, ct, ("$target", o.TargetId.ToString()), ("$state", o.State.ToString()), ("$start", Database.Ms(boundary)),
                 ("$reason", o.Reason), ("$observed", Database.Ms(o.ObservedAt)),
                 ("$telegram", o.TelegramAt is { } t ? Database.Ms(t) : null), ("$known", transitionKnown));
-            var type = o.State switch { PresenceState.Online => EventType.Online, PresenceState.Offline => EventType.Offline, _ => EventType.Unknown };
-            var duration = previous is { State: PresenceState.Online, StartKnown: true } && transitionKnown
-                ? (boundary - previous.Start).TotalSeconds : (double?)null;
-            await InsertEvent(c, new(0, o.TargetId, accountId, name, type, o.ObservedAt, duration, o.Reason), ct);
-            if (previous?.State == PresenceState.Unknown && o.State != PresenceState.Unknown)
+            await InsertEvent(c, new(0, o.TargetId, accountId, name, decision.Event, o.ObservedAt, decision.OnlineSeconds, o.Reason), ct);
+            if (decision.Restored)
                 await InsertEvent(c, new(0, o.TargetId, accountId, name, EventType.MonitorRestored, o.ObservedAt, null, "Observation resumed"), ct);
             transaction.Commit();
         }
@@ -74,7 +78,18 @@ public sealed partial class TelemetryRepository(Database db) : ITelemetryReposit
         await using var c = await db.Open(ct);
         var checkpoint = await HeartbeatAsync(ct) ?? now;
         using var transaction = c.BeginTransaction();
+        var open = new List<(string Target, long End)>();
+        using (var command = Database.Command(c, "SELECT target_id,MAX(start,$at) FROM intervals WHERE end IS NULL", ("$at", Database.Ms(checkpoint))))
+        {
+            await using var reader = await command.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct)) open.Add((reader.GetString(0), reader.GetInt64(1)));
+        }
         await Database.Exec(c, "UPDATE intervals SET end=MAX(start,$at),end_known=0 WHERE end IS NULL", ct, ("$at", Database.Ms(checkpoint)));
+        foreach (var item in open)
+            await Database.Exec(c, """
+                INSERT INTO intervals(target_id,state,start,reason,observed,start_known)
+                VALUES($target,'Unknown',$start,'WorkerUnavailable',$now,0)
+                """, ct, ("$target", item.Target), ("$start", item.End), ("$now", Database.Ms(now)));
         transaction.Commit();
     }
     private static async Task<PresenceInterval?> OpenInterval(SqliteConnection c, Guid targetId, CancellationToken ct)

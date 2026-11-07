@@ -78,7 +78,7 @@ public static partial class ConfigurationPolicy
 
     public static bool ValidIdentifier(string value) => !string.IsNullOrWhiteSpace(value)
         && (Username().IsMatch(value) || Phone().IsMatch(value));
-    [GeneratedRegex("^@?[A-Za-z][A-Za-z0-9_]{3,31}$")] private static partial Regex Username();
+    [GeneratedRegex("^@?[A-Za-z][A-Za-z0-9_]{0,31}$")] private static partial Regex Username();
     [GeneratedRegex("^\\+[1-9][0-9]{5,14}$")] private static partial Regex Phone();
     [GeneratedRegex("^[a-fA-F0-9]{32}$")] private static partial Regex ApiHash();
 }

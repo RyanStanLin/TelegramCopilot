@@ -14,7 +14,7 @@ public static class TelemetryEndpoints
             TypedResults.Ok(await service.TimelineAsync(id, new(from, to, page, pageSize, state), ct)))
             .WithName("GetTimeline").WithSummary("Get clipped presence intervals, including unknown downtime and gaps");
         group.MapGet("/statistics", async (Guid id, DateTimeOffset from, DateTimeOffset to, ITelemetryService service,
-            CancellationToken ct, string period = "day", string timeZone = "UTC", int page = 1, int pageSize = 100) =>
+            CancellationToken ct, string period = "day", string? timeZone = null, int page = 1, int pageSize = 100) =>
             TypedResults.Ok(await service.StatisticsAsync(id, new(from, to, page, pageSize), period, timeZone, ct)))
             .WithName("GetStatistics").WithSummary("Aggregate presence by calendar day, ISO week, month or year in a timezone");
         group.MapGet("/export.csv", async (Guid id, DateTimeOffset from, DateTimeOffset to, ITelemetryService service,

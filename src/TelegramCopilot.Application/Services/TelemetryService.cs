@@ -11,7 +11,7 @@ public interface ITelemetryService
 {
     Task<PageResponse<IntervalResponse>> TimelineAsync(Guid targetId, TimelineQuery query, CancellationToken ct);
     Task<string> CsvAsync(Guid targetId, TimelineQuery query, CancellationToken ct);
-    Task<StatisticsResponse> StatisticsAsync(Guid targetId, TimelineQuery query, string period, string timeZone, CancellationToken ct);
+    Task<StatisticsResponse> StatisticsAsync(Guid targetId, TimelineQuery query, string period, string? timeZone, CancellationToken ct);
 }
 public sealed class TelemetryService(IConfigurationRepository configs, ITelemetryRepository telemetry, TimeProvider clock) : ITelemetryService
 {
@@ -52,10 +52,11 @@ public sealed class TelemetryService(IConfigurationRepository configs, ITelemetr
             page++;
         }
     }
-    public async Task<StatisticsResponse> StatisticsAsync(Guid targetId, TimelineQuery query, string period, string timeZone, CancellationToken ct)
+    public async Task<StatisticsResponse> StatisticsAsync(Guid targetId, TimelineQuery query, string period, string? timeZone, CancellationToken ct)
     {
         var all = await Read(targetId, query, ct);
         if (period is not ("day" or "week" or "month" or "year")) throw new ArgumentException("period must be day, week, month or year.");
+        timeZone ??= (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault()?.Read<SystemSettings>().TimeZone ?? "Asia/Taipei";
         var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZone);
         var date = TimeZoneInfo.ConvertTime(query.From, zone).Date;
         date = period switch
@@ -84,7 +85,11 @@ public sealed class TelemetryService(IConfigurationRepository configs, ITelemetr
         if (resource is null || resource.Kind != ResourceKind.Targets) throw new KeyNotFoundException("Target not found.");
         var to = query.To < clock.GetUtcNow() ? query.To : clock.GetUtcNow();
         if (query.From >= to) throw new ArgumentException("The query must begin in the past.");
-        return PresenceTimeline.Fill(await telemetry.IntervalsAsync(targetId, query.From, to, ct), targetId, query.From, to);
+        var intervals = await telemetry.IntervalsAsync(targetId, query.From, to, ct);
+        if (resource.DeletedAt is { } deletedAt)
+            intervals = intervals.Where(x => x.Start < deletedAt).Select(x => x.End is null || x.End > deletedAt
+                ? x with { End = deletedAt, EndKnown = false } : x).ToArray();
+        return PresenceTimeline.Fill(intervals, targetId, query.From, to);
     }
     private static StatisticsBucket Summarize(IReadOnlyList<PresenceInterval> rows, DateTimeOffset from, DateTimeOffset to)
     {

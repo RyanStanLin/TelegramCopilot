@@ -33,6 +33,7 @@ public sealed class PersistenceTests
         var result = PresenceTimeline.Fill(await s.Telemetry.IntervalsAsync(id, t, t.AddSeconds(60), default), id, t, t.AddSeconds(60));
         Assert.Equal(new[] { PresenceState.Online, PresenceState.Unknown }, result.Select(x => x.State));
         Assert.Equal(50, result[1].Seconds(t.AddSeconds(60)));
+        Assert.Equal("WorkerUnavailable", result[1].Reason);
         Assert.False(result[0].EndKnown);
     }
     [Fact]
@@ -55,5 +56,19 @@ public sealed class PersistenceTests
         var page = await s.Deliveries.ListAsync("Telegram", d.ResourceId, 1, 10, default);
         Assert.Equal("Uncertain", Assert.Single(page.Items).Status);
         Assert.False(await s.Deliveries.ClaimAsync(d, default));
+    }
+    [Fact]
+    public async Task LateObservation_CannotRewriteAConfirmedNewerState()
+    {
+        await using var s = new TestStore(); await s.Initialize(); var id = Guid.NewGuid(); var t = s.Clock.Now;
+        await s.Telemetry.RecordAsync(new(id, PresenceState.Online, t, "Push"), "Alice", null, default);
+        await s.Telemetry.RecordAsync(new(id, PresenceState.Online, t.AddSeconds(30), "Cache"), "Alice", null, default);
+        await s.Telemetry.RecordAsync(new(id, PresenceState.Offline, t.AddSeconds(20), "Delayed"), "Alice", null, default);
+        await s.Telemetry.CheckpointAsync(t.AddSeconds(40), default);
+        var rows = await s.Telemetry.IntervalsAsync(id, t, t.AddSeconds(40), default);
+        var row = Assert.Single(rows);
+        Assert.Equal(PresenceState.Online, row.State);
+        Assert.Equal(t.AddSeconds(30), row.ObservedAt);
+        Assert.Equal(40, row.Seconds(t.AddSeconds(40)));
     }
 }

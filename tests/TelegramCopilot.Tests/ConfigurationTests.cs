@@ -61,4 +61,20 @@ public sealed class ConfigurationTests
         await Assert.ThrowsAsync<JsonException>(() => s.Configuration.SaveAsync(ResourceKind.Accounts, null,
             TestStore.Request("Bad", new { apiId = 1, apiHash = "bad", phone = "+886912345678", unknown = 2 }), default));
     }
+    [Fact]
+    public async Task DeletedOnlineTarget_DoesNotExtendKnownPresenceAfterDeletion()
+    {
+        await using var s = new TestStore(); await s.Initialize(); var a = await s.Account(); var target = await s.Target(a.Id);
+        var start = s.Clock.Now;
+        await s.Telemetry.RecordAsync(new(target.Id, Core.Presence.PresenceState.Online, start, "Push"), target.Name, a.Id, default);
+        s.Clock.Now = start.AddSeconds(10);
+        await s.Configuration.DeleteAsync(ResourceKind.Targets, target.Id, target.Revision, default);
+        s.Clock.Now = start.AddSeconds(60);
+        await s.Telemetry.CheckpointAsync(s.Clock.Now, default);
+        var page = await s.Analytics.TimelineAsync(target.Id, new(start, s.Clock.Now), default);
+        Assert.Equal(new[] { "Online", "Unknown" }, page.Items.Select(x => x.State));
+        Assert.Equal(10, page.Items[0].Seconds);
+        Assert.Equal(50, page.Items[1].Seconds);
+        Assert.False(page.Items[0].EndKnown);
+    }
 }

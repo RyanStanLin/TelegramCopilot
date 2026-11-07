@@ -67,6 +67,7 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
                         var result = target.Enabled ? await telegram.ObserveAsync(target, token)
                             : new Observation(target.Id, PresenceState.Unknown, now, "MonitoringDisabled");
                         await telemetry.RecordAsync(result, target.Name, settings.AccountId, token);
+                        if (result.Reason == "TargetReconfigured") lock (_next) _next[target.Id] = now.AddSeconds(1);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
@@ -89,8 +90,11 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
         await foreach (var observation in telegram.UpdatesAsync(ct))
         {
             var target = await configs.FindAsync(observation.TargetId, ct);
-            if (target is null || !target.Enabled) continue;
-            await telemetry.RecordAsync(observation, target.Name, target.Read<TargetSettings>().AccountId, ct);
+            if (target is null || !target.Enabled || observation.ObservedAt < target.UpdatedAt) continue;
+            var settings = target.Read<TargetSettings>();
+            if (observation.SourceAccountId is { } account && account != settings.AccountId) continue;
+            if (observation.SourceIdentifier is { } identifier && identifier != settings.Identifier) continue;
+            await telemetry.RecordAsync(observation, target.Name, settings.AccountId, ct);
         }
     }
 }

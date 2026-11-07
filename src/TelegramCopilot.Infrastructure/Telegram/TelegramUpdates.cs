@@ -36,6 +36,7 @@ public sealed partial class TelegramGateway
             }
             if (auth == "authorizationStateWaitPhoneNumber")
                 _transport.Post(clientId, new() { ["@type"] = "setAuthenticationPhoneNumber", ["phone_number"] = s.Config.Read<AccountSettings>().Phone });
+            if (auth == "authorizationStateReady") s.Error = null;
             if (auth == "authorizationStateReady")
                 _transport.Post(clientId, new() { ["@type"] = "setOption", ["name"] = "online",
                     ["value"] = new JsonObject { ["@type"] = "optionValueBoolean", ["value"] = true } });
@@ -51,14 +52,20 @@ public sealed partial class TelegramGateway
         {
             var code = data["code"]!.GetValue<int>();
             s.Error = $"Telegram error {code}";
-            if (code == 429) s.NotBefore = _clock.GetUtcNow().AddMinutes(1);
+            if (code == 429)
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(data["message"]?.ToString() ?? "", @"(?:retry after |FLOOD_WAIT_)(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                var seconds = match.Success && int.TryParse(match.Groups[1].Value, out var retry) ? Math.Max(1, retry) : 60;
+                s.NotBefore = _clock.GetUtcNow().AddSeconds(seconds);
+            }
         }
         if (type is "updateUserStatus" or "updateUser")
         {
             var userId = type == "updateUserStatus" ? data["user_id"]!.GetValue<long>() : data["user"]!["id"]!.GetValue<long>();
             var status = (type == "updateUserStatus" ? data["status"] : data["user"]!["status"])!.AsObject();
-            foreach (var (id, _) in _targets.Where(x => x.Value.AccountId == entry.Key && x.Value.UserId == userId))
-                _updates.Writer.TryWrite(ToObservation(id, status, _clock.GetUtcNow(), "TelegramUpdate"));
+            foreach (var (id, watch) in _targets.Where(x => x.Value.AccountId == entry.Key && x.Value.UserId == userId))
+                _updates.Writer.TryWrite(ToObservation(id, status, _clock.GetUtcNow(), "TelegramUpdate")
+                    with { SourceAccountId = entry.Key, SourceIdentifier = watch.Identifier });
         }
         if (type is "updateMessageSendSucceeded" or "updateMessageSendFailed")
         {

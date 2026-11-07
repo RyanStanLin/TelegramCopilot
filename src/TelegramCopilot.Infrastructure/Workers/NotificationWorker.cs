@@ -25,7 +25,9 @@ public sealed class NotificationWorker(IConfigurationRepository configs, ITeleme
                     if (rule.Event != value.Type || rule.TargetId is { } id && id != value.TargetId) continue;
                     var destination = all.FirstOrDefault(x => x.Id == rule.DestinationId && x.Kind == ResourceKind.Destinations && x.Enabled);
                     if (destination is null) continue;
-                    await Dispatch(resource.Id, destination.Read<DestinationSettings>(), rule, value, ct);
+                    var settings = destination.Read<DestinationSettings>();
+                    foreach (var device in settings.DeviceKeys.Distinct())
+                        await Dispatch(resource.Id, settings with { DeviceKeys = [device] }, rule, value, ct);
                 }
                 await telemetry.CompleteNotificationEventAsync(value.Id, ct);
             }
@@ -39,7 +41,8 @@ public sealed class NotificationWorker(IConfigurationRepository configs, ITeleme
     }
     private async Task Dispatch(Guid ruleId, DestinationSettings destination, RuleSettings rule, MonitorEvent value, CancellationToken ct)
     {
-        var id = $"bark:{value.Id}:{ruleId}";
+        var deviceHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(destination.DeviceKeys[0])))[..16];
+        var id = $"bark:{value.Id}:{ruleId}:{deviceHash}";
         if (!await deliveries.ClaimAsync(new(id, "Bark", ruleId, value.At, "Sending", null, null, clock.GetUtcNow()), ct)) return;
         try
         {

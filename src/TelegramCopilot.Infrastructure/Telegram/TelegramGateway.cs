@@ -96,14 +96,17 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
             return new(target.Id, PresenceState.Unknown, now, "AccountNotReady");
         if (s.Connection != "connectionStateReady") return new(target.Id, PresenceState.Unknown, now, "ConnectionUnavailable");
         if (s.NotBefore > now) return new(target.Id, PresenceState.Unknown, now, "RateLimited");
-        if (!_targets.TryGetValue(target.Id, out var info) || info.AccountId != config.AccountId || info.Identifier != config.Identifier)
+        var alreadyResolved = _targets.TryGetValue(target.Id, out var info);
+        if (!alreadyResolved || info.AccountId != config.AccountId || info.Identifier != config.Identifier)
         {
             var userId = await ResolveUser(s, config.Identifier, ct);
             info = (config.AccountId, userId, config.Identifier);
             _targets[target.Id] = info;
+            if (alreadyResolved) return new(target.Id, PresenceState.Unknown, _clock.GetUtcNow(), "TargetReconfigured");
         }
         var user = await _transport.Request(s.ClientId, new() { ["@type"] = "getUser", ["user_id"] = info.UserId }, ct);
-        return ToObservation(target.Id, user["status"]!.AsObject(), now, "CachedReconciliation");
+        return ToObservation(target.Id, user["status"]!.AsObject(), _clock.GetUtcNow(), "CachedReconciliation")
+            with { SourceAccountId = config.AccountId, SourceIdentifier = config.Identifier };
     }
     public async IAsyncEnumerable<Observation> UpdatesAsync([EnumeratorCancellation] CancellationToken ct)
     {

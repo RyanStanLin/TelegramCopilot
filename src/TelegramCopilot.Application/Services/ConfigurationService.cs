@@ -52,7 +52,7 @@ public sealed class ConfigurationService(IConfigurationRepository repository, Ti
             await Required(kind, id, ct);
             if ((await repository.ListAsync(null, ct)).Any(r => ConfigurationPolicy.References(r).Any(x => x.Id == id)))
                 throw new InvalidOperationException("Resource is still referenced. Remove dependent configuration first.");
-            await repository.DeleteAsync(id, revision, ct);
+            await repository.DeleteAsync(id, revision, clock.GetUtcNow(), ct);
         }
         finally { _gate.Release(); }
     }
