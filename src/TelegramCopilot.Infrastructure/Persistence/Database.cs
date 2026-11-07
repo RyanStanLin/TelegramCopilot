@@ -32,7 +32,7 @@ public sealed class Database
             CREATE TABLE IF NOT EXISTS intervals (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, target_id TEXT NOT NULL, state TEXT NOT NULL,
                 start INTEGER NOT NULL, end INTEGER, reason TEXT NOT NULL, observed INTEGER NOT NULL,
-                telegram_at INTEGER, start_known INTEGER NOT NULL, end_known INTEGER NOT NULL DEFAULT 0);
+                telegram_at INTEGER, start_known INTEGER NOT NULL, end_known INTEGER NOT NULL DEFAULT 0, expires_at INTEGER);
             CREATE UNIQUE INDEX IF NOT EXISTS ix_intervals_open ON intervals(target_id) WHERE end IS NULL;
             CREATE INDEX IF NOT EXISTS ix_intervals_range ON intervals(target_id,start,end);
             CREATE TABLE IF NOT EXISTS events (
@@ -47,6 +47,10 @@ public sealed class Database
                 status TEXT NOT NULL, external_id TEXT, error TEXT, updated_at INTEGER NOT NULL);
             CREATE INDEX IF NOT EXISTS ix_deliveries_history ON deliveries(updated_at,resource_id);
             """, ct);
+        using var column = Command(c, "SELECT name FROM pragma_table_info('intervals') WHERE name='expires_at'");
+        if (await column.ExecuteScalarAsync(ct) is null)
+            await Exec(c, "ALTER TABLE intervals ADD COLUMN expires_at INTEGER", ct);
+        await Exec(c, "INSERT OR IGNORE INTO schema_version VALUES(2)", ct);
     }
     internal static async Task<int> Exec(SqliteConnection c, string sql, CancellationToken ct,
         params (string Name, object? Value)[] parameters)

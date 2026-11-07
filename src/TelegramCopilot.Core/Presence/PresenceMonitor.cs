@@ -4,7 +4,8 @@ namespace TelegramCopilot.Core.Presence;
 
 public enum ObservationEffect { Ignore, Confirm, Transition }
 public sealed record PresenceDecision(ObservationEffect Effect, bool BoundaryKnown = false,
-    EventType Event = EventType.Unknown, double? OnlineSeconds = null, bool Restored = false);
+    EventType Event = EventType.Unknown, double? OnlineSeconds = null, bool Restored = false,
+    DateTimeOffset? ExpiredAt = null);
 
 public sealed class PresenceMonitor(Guid targetId, PresenceInterval? current)
 {
@@ -14,9 +15,10 @@ public sealed class PresenceMonitor(Guid targetId, PresenceInterval? current)
             throw new ArgumentException("Observation belongs to a different monitor.");
         if (current is not null && (observation.ObservedAt < current.ObservedAt || observation.ObservedAt < current.Start))
             return new(ObservationEffect.Ignore);
-        if (current?.State == observation.State && (observation.State != PresenceState.Unknown || current.Reason == observation.Reason))
+        var expired = current is { State: PresenceState.Online, ExpiresAt: { } expiry } && expiry < observation.ObservedAt;
+        if (!expired && current?.State == observation.State && (observation.State != PresenceState.Unknown || current.Reason == observation.Reason))
             return new(ObservationEffect.Confirm);
-        var known = current is not null && current.State != PresenceState.Unknown && observation.State != PresenceState.Unknown;
+        var known = !expired && current is not null && current.State != PresenceState.Unknown && observation.State != PresenceState.Unknown;
         var duration = current is { State: PresenceState.Online, StartKnown: true } && known
             ? (observation.ObservedAt - current.Start).TotalSeconds : (double?)null;
         var type = observation.State switch
@@ -26,6 +28,7 @@ public sealed class PresenceMonitor(Guid targetId, PresenceInterval? current)
             _ => EventType.Unknown
         };
         return new(ObservationEffect.Transition, known, type, duration,
-            current?.State == PresenceState.Unknown && observation.State != PresenceState.Unknown);
+            (current?.State == PresenceState.Unknown || expired) && observation.State != PresenceState.Unknown,
+            expired ? current!.ExpiresAt < current.Start ? current.Start : current.ExpiresAt : null);
     }
 }

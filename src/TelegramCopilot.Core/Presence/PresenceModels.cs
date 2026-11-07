@@ -6,7 +6,7 @@ public sealed record Observation(Guid TargetId, PresenceState State, DateTimeOff
     Guid? SourceAccountId = null, string? SourceIdentifier = null);
 public sealed record PresenceInterval(long Id, Guid TargetId, PresenceState State, DateTimeOffset Start,
     DateTimeOffset? End, string Reason, DateTimeOffset ObservedAt, DateTimeOffset? TelegramAt,
-    bool StartKnown, bool EndKnown)
+    bool StartKnown, bool EndKnown, DateTimeOffset? ExpiresAt = null)
 {
     public double Seconds(DateTimeOffset until) => Math.Max(0, ((End ?? until) - Start).TotalSeconds);
 }

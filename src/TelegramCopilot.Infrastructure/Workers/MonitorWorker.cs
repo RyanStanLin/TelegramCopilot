@@ -28,7 +28,7 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
     {
         while (!ct.IsCancellationRequested)
         {
-            var settings = (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault()?.Read<SystemSettings>() ?? new();
+            var settings = (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault(x => x.Enabled)?.Read<SystemSettings>() ?? new();
             await telemetry.CheckpointAsync(clock.GetUtcNow(), ct);
             await Task.Delay(TimeSpan.FromSeconds(settings.HeartbeatSeconds), clock, ct);
         }
@@ -96,6 +96,9 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
             var settings = target.Read<TargetSettings>();
             if (observation.SourceAccountId is { } account && account != settings.AccountId) continue;
             if (observation.SourceIdentifier is { } identifier && identifier != settings.Identifier) continue;
+            if (observation.State == PresenceState.Online && observation.ExpiresAt is { } expiry)
+                lock (_next)
+                    if (!_next.TryGetValue(target.Id, out var next) || expiry < next) _next[target.Id] = expiry;
             await telemetry.RecordAsync(observation, target.Name, settings.AccountId, ct);
         }
     }
