@@ -5,6 +5,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 RUN git init /td && cd /td && git remote add origin https://github.com/tdlib/td.git && git fetch --depth 1 origin ${TDLIB_COMMIT} && git checkout --detach FETCH_HEAD
 RUN cmake -S /td -B /td/build -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_LTO=OFF && cmake --build /td/build --target tdjson --parallel ${BUILD_JOBS}
 
+FROM debian:trixie-slim AS tdlib-artifact
+COPY --from=tdlib /td/build/libtdjson.so* /usr/local/lib/
+COPY --from=tdlib /td/LICENSE_1_0.txt /licenses/TDLib.txt
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /source
 COPY global.json Directory.Build.props TelegramCopilot.slnx ./

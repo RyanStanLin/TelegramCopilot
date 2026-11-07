@@ -1,0 +1,47 @@
+name: Build pinned TDLib runtime
+on:
+  push:
+    branches: [main]
+    paths: [Dockerfile, .github/workflows/native-runtime.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: tdlib-runtime
+  cancel-in-progress: false
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        id: image
+        with:
+          context: .
+          file: Dockerfile
+          target: tdlib-artifact
+          platforms: linux/amd64
+          build-args: BUILD_JOBS=4
+          push: true
+          tags: ghcr.io/ryanstanlin/${{ github.repository_id }}/tdlib:4c6377aa7386c39217878a9a56d581922ad37ca4
+          cache-from: type=gha,scope=tdlib
+          cache-to: type=gha,mode=max,scope=tdlib
+          provenance: mode=max
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Record immutable runtime
+        env:
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          printf 'TDLib source: `4c6377aa7386c39217878a9a56d581922ad37ca4`\n\nImage: `ghcr.io/ryanstanlin/%s/tdlib@%s`\n' '${{ github.repository_id }}' "$DIGEST" >> "$GITHUB_STEP_SUMMARY"

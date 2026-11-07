@@ -18,3 +18,5 @@ data/
 artifacts/
 work/primer/
 .DS_Store
+/.paas/
+/paas.secrets.json
