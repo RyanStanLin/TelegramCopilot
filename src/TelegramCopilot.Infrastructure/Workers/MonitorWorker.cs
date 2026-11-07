@@ -7,13 +7,11 @@ using TelegramCopilot.Core.Presence;
 namespace TelegramCopilot.Infrastructure.Workers;
 
 public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRepository telemetry,
-    IDeliveryRepository deliveries, ITelegramGateway telegram, TimeProvider clock, ILogger<MonitorWorker> logger) : BackgroundService
+    ITelegramGateway telegram, TimeProvider clock, ILogger<MonitorWorker> logger) : BackgroundService
 {
     private readonly Dictionary<Guid, DateTimeOffset> _next = new();
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        await telemetry.RecoverAsync(clock.GetUtcNow(), ct);
-        await deliveries.RecoverAsync(clock.GetUtcNow(), ct);
         await telemetry.EventAsync(new(0, null, null, "TelegramCopilot", EventType.WorkerStarted, clock.GetUtcNow(), null, "Worker started"), ct);
         try { await Task.WhenAll(Poll(ct), Receive(ct), Heartbeat(ct)); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }

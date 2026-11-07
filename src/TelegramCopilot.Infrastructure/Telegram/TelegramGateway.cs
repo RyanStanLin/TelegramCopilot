@@ -113,6 +113,7 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
         : throw new InvalidOperationException("Account is disabled, starting or native TDLib is unavailable.");
     public async ValueTask DisposeAsync()
     {
+        if (!_transport.Available) { _transport.Update -= OnUpdate; return; }
         foreach (var s in _sessions.Values) _transport.Post(s.ClientId, new() { ["@type"] = "close" });
         var until = _clock.GetUtcNow().AddSeconds(10);
         while (_transport.Available && _sessions.Values.Any(x => x.Auth != "authorizationStateClosed") && _clock.GetUtcNow() < until)

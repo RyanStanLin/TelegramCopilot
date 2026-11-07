@@ -13,6 +13,7 @@ public sealed class TelegramException(int code) : Exception($"Telegram request f
 public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
 {
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonObject>> _pending = new();
+    private readonly ConcurrentDictionary<int, byte> _clients = new();
     public event Action<int, JsonObject>? Update;
     public bool Available { get; private set; }
     public string? Error { get; private set; }
@@ -20,6 +21,7 @@ public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
     {
         if (!Available) throw new InvalidOperationException("Native TDLib is unavailable. Install libtdjson or use the Docker image.");
         var id = TdNative.Create();
+        _clients[id] = 0;
         Post(id, new() { ["@type"] = "getAuthorizationState" });
         return id;
     }
@@ -45,13 +47,24 @@ public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
         {
             TdNative.Execute("{\"@type\":\"setLogVerbosityLevel\",\"new_verbosity_level\":0}");
             Available = true;
-            while (!stoppingToken.IsCancellationRequested)
+            DateTimeOffset? shutdownAt = null;
+            while (true)
             {
+                if (stoppingToken.IsCancellationRequested)
+                {
+                    if (shutdownAt is null)
+                    {
+                        shutdownAt = DateTimeOffset.UtcNow.AddSeconds(10);
+                        foreach (var id in _clients.Keys) Post(id, new() { ["@type"] = "close" });
+                    }
+                    if (_clients.IsEmpty || DateTimeOffset.UtcNow >= shutdownAt) break;
+                }
                 var pointer = TdNative.Receive(0.2);
                 if (pointer == 0) continue;
                 var text = Marshal.PtrToStringUTF8(pointer)!;
                 var data = JsonNode.Parse(text)!.AsObject();
                 var clientId = data["@client_id"]?.GetValue<int>() ?? 0;
+                if (data["authorization_state"]?["@type"]?.GetValue<string>() == "authorizationStateClosed") _clients.TryRemove(clientId, out _);
                 var key = data["@extra"]?.GetValue<string>();
                 if (key is not null && _pending.TryGetValue(key, out var pending)) pending.TrySetResult(data);
                 try { Update?.Invoke(clientId, data); }
