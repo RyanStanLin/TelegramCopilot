@@ -47,7 +47,7 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
             var enabled = accounts.Where(x => x.Enabled).ToDictionary(x => x.Id);
             foreach (var (id, session) in _sessions)
             {
-                if (enabled.TryGetValue(id, out var updated) && updated.Settings.GetRawText() == session.Config.Settings.GetRawText()
+                if (enabled.TryGetValue(id, out var updated) && updated.Read<AccountSettings>() == session.Config.Read<AccountSettings>()
                     && session.Auth != "authorizationStateClosed") continue;
                 _transport.Post(session.ClientId, new() { ["@type"] = "close" });
                 _sessions.TryRemove(id, out _);

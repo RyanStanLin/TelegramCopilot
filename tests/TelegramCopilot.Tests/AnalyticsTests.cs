@@ -1,9 +1,23 @@
 using TelegramCopilot.Core.Presence;
+using TelegramCopilot.Application.Contracts;
 
 namespace TelegramCopilot.Tests;
 
 public sealed class AnalyticsTests
 {
+    [Fact]
+    public async Task DisabledSystemSettings_UseDefaultsUntilReenabled()
+    {
+        await using var s = new TestStore(); await s.Initialize(); var account = await s.Account(); var target = await s.Target(account.Id);
+        var settings = await s.Configuration.SaveAsync(TelegramCopilot.Core.Configuration.ResourceKind.Settings, null,
+            TestStore.Request("System", new TelegramCopilot.Core.Configuration.SystemSettings("UTC")) with { Enabled = false }, default);
+        var query = new TimelineQuery(s.Clock.Now.AddHours(-1), s.Clock.Now);
+        Assert.Equal("Asia/Taipei", (await s.Analytics.StatisticsAsync(target.Id, query, "day", null, default)).TimeZone);
+        await s.Configuration.SaveAsync(TelegramCopilot.Core.Configuration.ResourceKind.Settings, settings.Id,
+            new() { Name = settings.Name, Settings = settings.Settings, Revision = settings.Revision, Enabled = true }, default);
+        Assert.Equal("UTC", (await s.Analytics.StatisticsAsync(target.Id, query, "day", null, default)).TimeZone);
+    }
+
     [Fact]
     public async Task Statistics_CountDurationAverageAndUnknownCoverage_AreIndependent()
     {

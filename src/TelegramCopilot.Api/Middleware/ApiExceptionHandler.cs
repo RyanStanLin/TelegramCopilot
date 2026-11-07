@@ -22,8 +22,7 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : I
         logger.LogWarning("API request {Path} failed with {Type}", context.Request.Path, exception.GetType().Name);
         context.Response.StatusCode = status;
         var detail = exception is ArgumentException or InvalidOperationException or KeyNotFoundException ? exception.Message : title;
-        await context.Response.WriteAsJsonAsync(new ProblemDetails { Status = status, Title = title, Detail = detail,
-            Instance = context.Request.Path }, cancellationToken: ct);
+        await Results.Problem(statusCode: status, title: title, detail: detail, instance: context.Request.Path).ExecuteAsync(context);
         return true;
     }
 }

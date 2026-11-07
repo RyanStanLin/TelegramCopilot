@@ -56,7 +56,7 @@ public sealed class TelemetryService(IConfigurationRepository configs, ITelemetr
     {
         var all = await Read(targetId, query, ct);
         if (period is not ("day" or "week" or "month" or "year")) throw new ArgumentException("period must be day, week, month or year.");
-        timeZone ??= (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault()?.Read<SystemSettings>().TimeZone ?? "Asia/Taipei";
+        timeZone ??= (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault(x => x.Enabled)?.Read<SystemSettings>().TimeZone ?? "Asia/Taipei";
         var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZone);
         var date = TimeZoneInfo.ConvertTime(query.From, zone).Date;
         date = period switch

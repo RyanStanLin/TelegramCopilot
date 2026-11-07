@@ -22,7 +22,7 @@ public sealed class SchedulerWorker(IConfigurationRepository configs, IDeliveryR
             {
                 sending.RemoveAll(x => x.IsCompletedSuccessfully);
                 var now = clock.GetUtcNow();
-                var settings = (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault()?.Read<SystemSettings>() ?? new();
+                var settings = (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault(x => x.Enabled)?.Read<SystemSettings>() ?? new();
                 foreach (var schedule in (await configs.ListAsync(ResourceKind.Schedules, ct)).Where(x => x.Enabled))
                 {
                     var s = schedule.Read<ScheduleSettings>();

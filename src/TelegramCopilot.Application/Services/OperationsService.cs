@@ -29,7 +29,7 @@ public sealed class OperationsService(IConfigurationRepository configs, ITelemet
     public async Task<HealthResponse> HealthAsync(CancellationToken ct)
     {
         var heartbeat = await telemetry.HeartbeatAsync(ct);
-        var settings = (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault()?.Read<SystemSettings>() ?? new();
+        var settings = (await configs.ListAsync(ResourceKind.Settings, ct)).FirstOrDefault(x => x.Enabled)?.Read<SystemSettings>() ?? new();
         var healthy = telegram.NativeAvailable && heartbeat is { } h && (clock.GetUtcNow() - h).TotalSeconds <= settings.StaleAfterSeconds;
         return new(healthy ? "Healthy" : "Degraded", clock.GetUtcNow(), heartbeat, telegram.NativeAvailable, telegram.NativeError);
     }

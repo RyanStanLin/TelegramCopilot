@@ -7,6 +7,20 @@ namespace TelegramCopilot.Tests;
 
 public sealed class TelegramGatewayTests
 {
+    [Fact]
+    public async Task SemanticAccountUpdate_DoesNotReconnectAnActiveSession()
+    {
+        await using var h = new TelegramTestHost(); await h.Initialize();
+        var reordered = System.Text.Json.JsonSerializer.SerializeToElement(new
+            { phone = "+886912345678", apiHash = "***", apiId = 12345 });
+        await h.Store.Configuration.SaveAsync(ResourceKind.Accounts, h.Account.Id,
+            new() { Name = "Renamed account", Settings = reordered, Revision = 1 }, default);
+        await h.Gateway.ReconcileAccountsAsync(await h.Store.Configs.ListAsync(ResourceKind.Accounts, default), default);
+        Assert.Single(h.Transport.Clients);
+        Assert.DoesNotContain(h.Transport.Posts, value => value.Body["@type"]!.ToString() == "close");
+        Assert.Equal("authorizationStateReady", (await h.Gateway.StatusAsync(h.Account.Id, default)).AuthorizationState);
+    }
+
     [Theory]
     [InlineData("code", "authorizationStateWaitCode", "checkAuthenticationCode", "code")]
     [InlineData("password", "authorizationStateWaitPassword", "checkAuthenticationPassword", "password")]
