@@ -21,7 +21,7 @@ public sealed class MonitorWorkerTests
         var input = new PausedObservations();
         var telegram = new PulseGateway(input, at);
         using var worker = new MonitorWorker(store.Configs, store.Telemetry, telegram, input,
-            store.Clock, NullLogger<MonitorWorker>.Instance);
+            store.Clock, NullLogger<MonitorWorker>.Instance, new TelegramCopilot.Infrastructure.Persistence.MonitoringRepository(store.Database));
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         await worker.StartAsync(timeout.Token);
         try
@@ -45,6 +45,13 @@ public sealed class MonitorWorkerTests
         Assert.Equal(10, online.Seconds(at.AddSeconds(50)));
         var events = await store.Telemetry.EventsAsync(target.Id, "Offline", at, at.AddSeconds(50), 1, 100, default);
         Assert.Equal(10, Assert.Single(events.Items, value => value.OnlineSeconds is not null).OnlineSeconds);
+        var disabled = (await store.Configs.FindAsync(target.Id, default))!;
+        var checks = await new TelegramCopilot.Infrastructure.Persistence.MonitoringRepository(store.Database)
+            .GetAsync(disabled, store.Clock.Now, default);
+        Assert.False(checks.Enabled);
+        Assert.Equal(1, checks.PollCount);
+        Assert.Equal(1, checks.SuccessfulPollCount);
+        Assert.Equal(0, checks.FailedPollCount);
     }
 
     private static async Task Until(Func<Task<bool>> condition, CancellationToken ct)
@@ -71,6 +78,7 @@ public sealed class MonitorWorkerTests
 
     private sealed class PulseGateway(IObservationStream stream, DateTimeOffset at) : ITelegramGateway
     {
+        public Task<TelegramAvatar?> AvatarAsync(Resource target, CancellationToken ct) => Task.FromResult<TelegramAvatar?>(null);
         private int _started;
         public bool NativeAvailable => true;
         public string? NativeError => null;

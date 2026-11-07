@@ -53,7 +53,7 @@ public sealed class BarkIntegrationTests
             Assert.All(received, payload =>
             {
                 Assert.Equal("Alice", payload["title"]!.ToString());
-                Assert.Equal("Online 00:01:05", payload["body"]!.ToString());
+                Assert.Equal("Online 1分钟5秒", payload["body"]!.ToString());
                 Assert.Equal("Alice Offline", payload["subtitle"]!.ToString());
                 Assert.Equal("presence-Alice", payload["group"]!.ToString());
                 Assert.Equal("timeSensitive", payload["level"]!.ToString());

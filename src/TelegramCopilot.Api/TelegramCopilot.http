@@ -5,6 +5,8 @@ GET {{baseUrl}}/health/ready
 @accountId = 11111111-1111-1111-1111-111111111111
 @targetId = 22222222-2222-2222-2222-222222222222
 @destinationId = 33333333-3333-3333-3333-333333333333
+@scheduleId = 55555555-5555-4555-8555-555555555555
+@ruleId = 66666666-6666-4666-8666-666666666666
 @id = 44444444-4444-4444-4444-444444444444
 @from = 2026-11-07T00:00:00Z
 @to = 2026-11-08T00:00:00Z
@@ -319,3 +321,39 @@ POST {{baseUrl}}/api/accounts/{{accountId}}/login
 Content-Type: application/json
 
 {"type": "emailCode", "value": "12345"}
+
+### Durable monitor overview (read only)
+GET {{baseUrl}}/api/monitoring
+
+### Target diagnostics and Telegram profile (read only)
+GET {{baseUrl}}/api/targets/{{targetId}}/monitoring
+
+### Target avatar
+GET {{baseUrl}}/api/targets/{{targetId}}/avatar
+
+### Validate an unsaved notification rule without sending
+POST {{baseUrl}}/api/rules/validate
+Content-Type: application/json
+
+{
+  "name": "Offline notification",
+  "enabled": false,
+  "settings": {
+    "destinationId": "{{destinationId}}",
+    "event": "Offline",
+    "title": "{NAME}",
+    "body": "Online for {TIME_OF_ONLINE}"
+  }
+}
+
+### Send the saved schedule immediately (use only with the intended recipient)
+POST {{baseUrl}}/api/schedules/{{scheduleId}}/test
+Content-Type: application/json
+
+{"requestId":"11111111-1111-4111-8111-111111111111"}
+
+### Test this saved rule with a simulated event, not the entire event pipeline
+POST {{baseUrl}}/api/rules/{{ruleId}}/test
+Content-Type: application/json
+
+{"requestId":"22222222-2222-4222-8222-222222222222"}

@@ -6,6 +6,14 @@ namespace TelegramCopilot.Infrastructure.Persistence;
 
 public sealed class DeliveryRepository(Database db) : IDeliveryRepository
 {
+    public async Task<DeliveryResponse?> FindAsync(string id, CancellationToken ct)
+    {
+        await using var c = await db.Open(ct);
+        using var command = Database.Command(c, "SELECT * FROM deliveries WHERE id=$id", ("$id", id));
+        await using var r = await command.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct) ? new(r.GetString(0), r.GetString(1), Guid.Parse(r.GetString(2)), Database.At(r.GetInt64(3)),
+            r.GetString(4), r.IsDBNull(5) ? null : r.GetString(5), r.IsDBNull(6) ? null : r.GetString(6), Database.At(r.GetInt64(7))) : null;
+    }
     public async Task<bool> ClaimAsync(DeliveryResponse d, CancellationToken ct)
     {
         await using var c = await db.Open(ct);

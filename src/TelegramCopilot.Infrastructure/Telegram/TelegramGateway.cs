@@ -55,6 +55,8 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
                 foreach (var (target, info) in _targets.Where(x => x.Value.AccountId == id))
                 {
                     _targets.TryRemove(target, out _);
+                    _profiles.TryRemove(target, out _);
+                    _avatars.TryRemove(target, out _);
                     _observations.Publish(new(target, PresenceState.Unknown, _clock.GetUtcNow(), "AccountReconfigured",
                         SourceAccountId: id, SourceIdentifier: info.Identifier));
                 }
@@ -137,8 +139,10 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
             if (alreadyResolved) return new(target.Id, PresenceState.Unknown, _clock.GetUtcNow(), "TargetReconfigured");
         }
         var user = await _transport.Request(s.ClientId, new() { ["@type"] = "getUser", ["user_id"] = info.UserId }, ct);
+        var profile = ReadProfile(user);
+        _profiles[target.Id] = (config.AccountId, config.Identifier, profile);
         return ToObservation(target.Id, user["status"]!.AsObject(), _clock.GetUtcNow(), "CachedReconciliation")
-            with { SourceAccountId = config.AccountId, SourceIdentifier = config.Identifier };
+            with { SourceAccountId = config.AccountId, SourceIdentifier = config.Identifier, Profile = profile };
     }
     private Session Required(Guid id) => _sessions.TryGetValue(id, out var s) ? s
         : throw new InvalidOperationException("Account is disabled, starting or native TDLib is unavailable.");

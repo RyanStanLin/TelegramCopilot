@@ -7,7 +7,7 @@ public static class TemplateRenderer
     public static string Render(string template, MonitorEvent value)
     {
         var seconds = value.OnlineSeconds;
-        var duration = seconds is { } s ? TimeSpan.FromSeconds(s).ToString("c", CultureInfo.InvariantCulture) : "unknown";
+        var duration = seconds is { } s ? DurationText.Format(s) : "unknown";
         var replacements = new Dictionary<string, string>
         {
             ["NAME"] = value.Name, ["EVENT"] = value.Type.ToString(), ["TIME_OF_ONLINE"] = duration,

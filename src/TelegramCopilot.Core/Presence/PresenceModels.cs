@@ -3,7 +3,8 @@ namespace TelegramCopilot.Core.Presence;
 public enum PresenceState { Online, Offline, Unknown }
 public sealed record Observation(Guid TargetId, PresenceState State, DateTimeOffset ObservedAt,
     string Reason, DateTimeOffset? TelegramAt = null, DateTimeOffset? ExpiresAt = null,
-    Guid? SourceAccountId = null, string? SourceIdentifier = null);
+    Guid? SourceAccountId = null, string? SourceIdentifier = null,
+    TelegramProfile? Profile = null, string? TelegramStatus = null);
 public sealed record PresenceInterval(long Id, Guid TargetId, PresenceState State, DateTimeOffset Start,
     DateTimeOffset? End, string Reason, DateTimeOffset ObservedAt, DateTimeOffset? TelegramAt,
     bool StartKnown, bool EndKnown, DateTimeOffset? ExpiresAt = null)

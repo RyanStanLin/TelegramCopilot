@@ -26,6 +26,7 @@ public interface ITelemetryRepository
 }
 public interface IDeliveryRepository
 {
+    Task<DeliveryResponse?> FindAsync(string id, CancellationToken ct);
     Task<bool> ClaimAsync(DeliveryResponse delivery, CancellationToken ct);
     Task CompleteAsync(string id, string status, string? externalId, string? error, DateTimeOffset at, CancellationToken ct);
     Task<PageResponse<DeliveryResponse>> ListAsync(string? channel, Guid? resourceId, int page, int pageSize, CancellationToken ct);
@@ -40,7 +41,9 @@ public interface ITelegramGateway
     Task<AccountStatusResponse> LoginAsync(Guid accountId, LoginRequest request, CancellationToken ct);
     Task<Observation> ObserveAsync(Resource target, CancellationToken ct);
     Task<SendReceipt> SendAsync(Guid accountId, string recipient, string message, CancellationToken ct);
+    Task<TelegramAvatar?> AvatarAsync(Resource target, CancellationToken ct);
 }
+public sealed record TelegramAvatar(byte[] Content, string ContentType);
 public interface IObservationStream
 {
     void Publish(Observation observation);

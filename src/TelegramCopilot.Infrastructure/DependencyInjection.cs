@@ -20,10 +20,14 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IConfigurationRepository, ConfigurationRepository>();
         services.AddSingleton<ITelemetryRepository, TelemetryRepository>();
+        services.AddSingleton<IMonitoringRepository, MonitoringRepository>();
         services.AddSingleton<IDeliveryRepository, DeliveryRepository>();
         services.AddSingleton<IConfigurationService, ConfigurationService>();
         services.AddSingleton<ITelemetryService, TelemetryService>();
         services.AddSingleton<IOperationsService, OperationsService>();
+        services.AddSingleton<IMonitoringService, MonitoringService>();
+        services.AddSingleton<IRuleValidationService, RuleValidationService>();
+        services.AddSingleton<IManualTestService, ManualTestService>();
         services.AddSingleton<IObservationStream, ObservationStream>();
         services.AddSingleton<TdTransport>();
         services.AddSingleton<ITdTransport>(p => p.GetRequiredService<TdTransport>());

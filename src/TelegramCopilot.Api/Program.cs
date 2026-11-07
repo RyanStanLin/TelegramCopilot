@@ -26,12 +26,15 @@ var app = builder.Build();
 await app.Services.GetRequiredService<Database>().Initialize(CancellationToken.None);
 await app.Services.GetRequiredService<ITelemetryRepository>().RecoverAsync(DateTimeOffset.UtcNow, CancellationToken.None);
 await app.Services.GetRequiredService<IDeliveryRepository>().RecoverAsync(DateTimeOffset.UtcNow, CancellationToken.None);
+await app.Services.GetRequiredService<IMonitoringRepository>().RecoverAsync(DateTimeOffset.UtcNow, CancellationToken.None);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.MapOpenApi();
 app.MapConfigurations();
 app.MapTelemetry();
 app.MapOperations();
+app.MapMonitoring();
+app.MapManualTests();
 app.Run();
 
 public partial class Program;

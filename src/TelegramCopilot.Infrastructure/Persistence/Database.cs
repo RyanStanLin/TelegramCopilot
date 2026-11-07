@@ -46,11 +46,19 @@ public sealed class Database
                 id TEXT PRIMARY KEY, channel TEXT NOT NULL, resource_id TEXT NOT NULL, due_at INTEGER NOT NULL,
                 status TEXT NOT NULL, external_id TEXT, error TEXT, updated_at INTEGER NOT NULL);
             CREATE INDEX IF NOT EXISTS ix_deliveries_history ON deliveries(updated_at,resource_id);
+            CREATE TABLE IF NOT EXISTS target_monitoring (
+                target_id TEXT PRIMARY KEY, account_id TEXT NOT NULL, identifier TEXT NOT NULL,
+                revision INTEGER NOT NULL, poll_count INTEGER NOT NULL DEFAULT 0,
+                succeeded INTEGER NOT NULL DEFAULT 0, failed INTEGER NOT NULL DEFAULT 0,
+                started INTEGER, completed INTEGER, last_success INTEGER, next_poll INTEGER,
+                state TEXT NOT NULL DEFAULT 'Unknown', reason TEXT NOT NULL DEFAULT 'NoObservation', error TEXT,
+                profile TEXT, telegram_status TEXT, last_seen INTEGER, observed INTEGER, telegram_updated INTEGER);
             """, ct);
         using var column = Command(c, "SELECT name FROM pragma_table_info('intervals') WHERE name='expires_at'");
         if (await column.ExecuteScalarAsync(ct) is null)
             await Exec(c, "ALTER TABLE intervals ADD COLUMN expires_at INTEGER", ct);
         await Exec(c, "INSERT OR IGNORE INTO schema_version VALUES(2)", ct);
+        await Exec(c, "INSERT OR IGNORE INTO schema_version VALUES(3)", ct);
     }
     internal static async Task<int> Exec(SqliteConnection c, string sql, CancellationToken ct,
         params (string Name, object? Value)[] parameters)

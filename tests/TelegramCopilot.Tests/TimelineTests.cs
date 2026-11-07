@@ -35,7 +35,7 @@ public sealed class TimelineTests
     public void TemplateValues_AreNotRecursivelyInterpreted()
     {
         var e = new MonitorEvent(1, null, null, "{EVENT}", Core.Configuration.EventType.Offline, Start, 62, "ok");
-        Assert.Equal("{EVENT}: 00:01:02 / 62", TemplateRenderer.Render("{NAME}: {TIME_OF_ONLINE} / {ONLINE_SECONDS}", e));
+        Assert.Equal("{EVENT}: 1分钟2秒 / 62", TemplateRenderer.Render("{NAME}: {TIME_OF_ONLINE} / {ONLINE_SECONDS}", e));
     }
     [Theory]
     [InlineData("=SUM(A1)", "\"'=SUM(A1)\"")]

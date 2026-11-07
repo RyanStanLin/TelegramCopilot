@@ -72,7 +72,7 @@ PUT 在信封中另加 `revision`。Secret 字段返回 `***`，更新时原样�
 
 `targetId=null` 匹配该事件的全部对象。事件为 Online, Offline, Unknown, MonitorRestored, AccountReady, AccountUnavailable, WorkerStarted, WorkerStopped, MessageSent, MessageFailed, Error。
 
-模板变量：`NAME`, `EVENT`, `TIME_OF_ONLINE`（d.hh:mm:ss），`ONLINE_SECONDS`，`AT`，`DETAIL`，`TARGET_ID`，`ACCOUNT_ID`，使用 `{VARIABLE}`。中断或首次观测的完整在线时长无法确定时为 `unknown`，不会把部分时长冒充完整时长。
+模板变量：`NAME`, `EVENT`, `TIME_OF_ONLINE`（自适应时长，如 `1s`、`1分钟`、`2小时32分1秒`），`ONLINE_SECONDS`，`AT`，`DETAIL`，`TARGET_ID`，`ACCOUNT_ID`，使用 `{VARIABLE}`。中断或首次观测的完整在线时长无法确定时为 `unknown`，不会把部分时长冒充完整时长。
 
 `parameters` 支持 BarkerSharper ExtendedModel 的 level / badge / autoCopy / copy / sound / call / icon / group / volume / isArchive / url 等参数；还可透传库尚未建模的 Bark 字段，例如 subtitle。rule 顶层 title/body/subtitle/group 优先。设备密钥、密文及 IV 不能通过 parameters 覆盖。参数字符串支持同样的模板变量。BarkerSharper 没有取消参数，超时结果可能为 Uncertain，实际网络请求可能已经送达。
 
@@ -115,3 +115,14 @@ GET /api/targets/{id}/export.csv?from=...&to=...&state=Online
 ## 错误
 
 400 参数错误；404 不存在；409 配置版本冲突、引用仍存在或账号当前不能操作；429 Telegram 频率限制；502 Telegram 请求失败；504 超时。响应使用 Problem Details。OpenAPI 和 `TelegramCopilot.http` 包含所有操作。
+
+## Monitoring and manual tests
+
+- `GET /api/monitoring` returns worker health, total persisted poll attempts and enabled target count. GET requests never perform a poll or increment counters.
+- `GET /api/targets/{id}/monitoring` includes successful/unsuccessful checks, last/next poll, nickname, username, avatar availability and Telegram-provided last-seen. Privacy-limited statuses retain their original category and do not invent an exact timestamp.
+- `GET /api/targets/{id}/avatar` reads the current small Telegram photo through the configured account. Missing photos return 404.
+- `POST /api/rules/validate` accepts the ordinary configuration draft, returns field issues and a simulated notification preview, and performs no delivery or save.
+- `POST /api/schedules/{id}/test` and `POST /api/rules/{id}/test` accept `{ "requestId": "a-new-UUID" }`. They send the saved configuration immediately and audit every outcome. Reusing the same requestId does not send again. A schedule test does not consume or alter its recurring occurrence. A rule test invokes only that rule and does not publish a synthetic global event. Disabled rules/destinations can be tested manually; automatic delivery still honors enablement.
+- Delivery IDs beginning with `test:telegram:` or `test:bark:` identify manual tests. Failed, partial and uncertain results are preserved.
+
+API/CSV numeric duration fields remain seconds for compatibility. The console accepts Chinese/English time units and formats displayed durations automatically.

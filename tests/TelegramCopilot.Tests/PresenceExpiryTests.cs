@@ -105,6 +105,6 @@ public sealed class PresenceExpiryTests
         Assert.Null(row.ExpiresAt);
         await using var upgraded = await s.Database.Open(default);
         using var version = upgraded.CreateCommand(); version.CommandText = "SELECT MAX(version) FROM schema_version";
-        Assert.Equal(2L, await version.ExecuteScalarAsync());
+        Assert.Equal(3L, await version.ExecuteScalarAsync());
     }
 }

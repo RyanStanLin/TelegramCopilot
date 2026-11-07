@@ -76,9 +76,13 @@ public sealed partial class TelegramGateway
         {
             var userId = type == "updateUserStatus" ? data["user_id"]!.GetValue<long>() : data["user"]!["id"]!.GetValue<long>();
             var status = (type == "updateUserStatus" ? data["status"] : data["user"]!["status"])!.AsObject();
+            var profile = type == "updateUser" ? ReadProfile(data["user"]!.AsObject()) : null;
             foreach (var (id, watch) in _targets.Where(x => x.Value.AccountId == entry.Key && x.Value.UserId == userId))
+            {
+                if (profile is not null) _profiles[id] = (entry.Key, watch.Identifier, profile);
                 _observations.Publish(ToObservation(id, status, _clock.GetUtcNow(), "TelegramUpdate")
-                    with { SourceAccountId = entry.Key, SourceIdentifier = watch.Identifier });
+                    with { SourceAccountId = entry.Key, SourceIdentifier = watch.Identifier, Profile = profile });
+            }
         }
         if (type is "updateMessageSendSucceeded" or "updateMessageSendFailed")
         {
@@ -98,12 +102,13 @@ public sealed partial class TelegramGateway
         if (type == "userStatusOnline")
         {
             var expires = DateTimeOffset.FromUnixTimeSeconds(status["expires"]!.GetValue<long>());
-            return expires > at ? new(targetId, PresenceState.Online, at, reason, null, expires)
-                : new(targetId, PresenceState.Unknown, at, "ExpiredOnlineStatus");
+            return expires > at ? new(targetId, PresenceState.Online, at, reason, null, expires, TelegramStatus: type)
+                : new(targetId, PresenceState.Unknown, at, "ExpiredOnlineStatus", TelegramStatus: type);
         }
         if (type == "userStatusOffline")
             return new(targetId, PresenceState.Offline, at, reason,
-                DateTimeOffset.FromUnixTimeSeconds(status["was_online"]!.GetValue<long>()));
-        return new(targetId, PresenceState.Unknown, at, type);
+                status["was_online"]!.GetValue<long>() is > 0 and var seen ? DateTimeOffset.FromUnixTimeSeconds(seen) : null,
+                TelegramStatus: type);
+        return new(targetId, PresenceState.Unknown, at, type, TelegramStatus: type);
     }
 }

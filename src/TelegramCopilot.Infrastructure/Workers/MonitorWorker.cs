@@ -7,7 +7,8 @@ using TelegramCopilot.Core.Presence;
 namespace TelegramCopilot.Infrastructure.Workers;
 
 public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRepository telemetry,
-    ITelegramGateway telegram, IObservationStream observations, TimeProvider clock, ILogger<MonitorWorker> logger) : BackgroundService
+    ITelegramGateway telegram, IObservationStream observations, TimeProvider clock, ILogger<MonitorWorker> logger,
+    IMonitoringRepository monitoring) : BackgroundService
 {
     private readonly Dictionary<Guid, DateTimeOffset> _next = new();
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -64,13 +65,17 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
                     }
                     try
                     {
+                        if (target.Enabled) await monitoring.StartPollAsync(target, now, now.AddSeconds(settings.RefreshSeconds), token);
                         var result = target.Enabled ? await telegram.ObserveAsync(target, token)
                             : new Observation(target.Id, PresenceState.Unknown, now, "MonitoringDisabled");
+                        if (target.Enabled) await monitoring.CompletePollAsync(target, result, null, token);
                         observations.Publish(result with { SourceAccountId = settings.AccountId, SourceIdentifier = settings.Identifier });
                         if (result.Reason == "TargetReconfigured") lock (_next) _next[target.Id] = now.AddSeconds(1);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
+                        if (target.Enabled) await monitoring.CompletePollAsync(target,
+                            new(target.Id, PresenceState.Unknown, clock.GetUtcNow(), "ObservationFailed"), ex.GetType().Name, token);
                         observations.Publish(new(target.Id, PresenceState.Unknown, clock.GetUtcNow(), "ObservationFailed",
                             SourceAccountId: settings.AccountId, SourceIdentifier: settings.Identifier));
                         await telemetry.EventAsync(new(0, target.Id, settings.AccountId, target.Name, EventType.Error, clock.GetUtcNow(), null,
@@ -96,6 +101,7 @@ public sealed class MonitorWorker(IConfigurationRepository configs, ITelemetryRe
             var settings = target.Read<TargetSettings>();
             if (observation.SourceAccountId is { } account && account != settings.AccountId) continue;
             if (observation.SourceIdentifier is { } identifier && identifier != settings.Identifier) continue;
+            await monitoring.ObserveAsync(target, observation, ct);
             if (observation.State == PresenceState.Online && observation.ExpiresAt is { } expiry)
                 lock (_next)
                     if (!_next.TryGetValue(target.Id, out var next) || expiry < next) _next[target.Id] = expiry;

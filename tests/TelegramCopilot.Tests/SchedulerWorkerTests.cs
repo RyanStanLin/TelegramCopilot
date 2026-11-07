@@ -83,6 +83,7 @@ public sealed class SchedulerWorkerTests
 
     private sealed class MessageGateway : ITelegramGateway
     {
+        public Task<TelegramAvatar?> AvatarAsync(Resource target, CancellationToken ct) => Task.FromResult<TelegramAvatar?>(null);
         public ConcurrentQueue<(string Recipient, string Message)> Messages { get; } = new();
         public bool NativeAvailable => true;
         public string? NativeError => null;
