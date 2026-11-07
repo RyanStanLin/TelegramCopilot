@@ -16,7 +16,20 @@ public sealed partial class TelegramGateway
         {
             var state = type == "updateAuthorizationState" ? data["authorization_state"]!.AsObject() : data;
             var auth = state["@type"]!.GetValue<string>();
+            s.Login = auth switch
+            {
+                "authorizationStateWaitPhoneNumber" => new("phone", s.Config.Read<AccountSettings>().Phone),
+                "authorizationStateWaitCode" => new("code", state["code_info"]?["phone_number"]?.GetValue<string>(),
+                    state["code_info"]?["type"]?["@type"]?.GetValue<string>(),
+                    state["code_info"]?["type"]?["length"]?.GetValue<int>()),
+                "authorizationStateWaitPassword" => new("password", PasswordHint: state["password_hint"]?.GetValue<string>()),
+                "authorizationStateWaitEmailAddress" => new("email"),
+                "authorizationStateWaitEmailCode" => new("emailCode", CodeLength: state["code_info"]?["length"]?.GetValue<int>(),
+                    EmailAddressPattern: state["code_info"]?["email_address_pattern"]?.GetValue<string>()),
+                _ => null
+            };
             if (auth == s.Auth) return;
+            s.Error = null;
             s.Auth = auth;
             if (auth == "authorizationStateWaitTdlibParameters")
             {
@@ -52,11 +65,10 @@ public sealed partial class TelegramGateway
         if (type == "error")
         {
             var code = data["code"]!.GetValue<int>();
-            s.Error = $"Telegram error {code}";
+            s.Error = TelegramException.SafeError(code, data["message"]?.ToString());
             if (code == 429)
             {
-                var match = System.Text.RegularExpressions.Regex.Match(data["message"]?.ToString() ?? "", @"(?:retry after |FLOOD_WAIT_)(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                var seconds = match.Success && int.TryParse(match.Groups[1].Value, out var retry) ? Math.Max(1, retry) : 60;
+                var seconds = TelegramException.RetryAfter(code, data["message"]?.ToString()) ?? 60;
                 s.NotBefore = _clock.GetUtcNow().AddSeconds(seconds);
             }
         }

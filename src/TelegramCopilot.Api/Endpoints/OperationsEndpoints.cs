@@ -23,7 +23,7 @@ public static class OperationsEndpoints
             .WithName("AccountStatus").WithSummary("Inspect Telegram login challenge and connection state");
         app.MapPost("/api/accounts/{id:guid}/login", async (Guid id, LoginRequest request, IOperationsService service, CancellationToken ct) =>
             TypedResults.Ok(await service.LoginAsync(id, request, ct)))
-            .WithName("SubmitLogin").WithSummary("Submit Telegram code, 2FA password, email or email code; secrets are not stored");
+            .WithName("SubmitLogin").WithSummary("Send the saved phone number or submit the current Telegram code, 2FA password, email or email code; challenge secrets are not stored");
         app.MapGet("/api/events", async (DateTimeOffset from, DateTimeOffset to, IOperationsService service, CancellationToken ct,
             Guid? targetId = null, string? type = null, int page = 1, int pageSize = 100) =>
             TypedResults.Ok(await service.EventsAsync(targetId, type, new(from, to, page, pageSize), ct)))

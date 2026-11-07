@@ -6,10 +6,6 @@ using Microsoft.Extensions.Logging;
 
 namespace TelegramCopilot.Infrastructure.Telegram;
 
-public sealed class TelegramException(int code) : Exception($"Telegram request failed (code {code}). Check account status or retry after any flood-wait.")
-{
-    public int Code { get; } = code;
-}
 public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService, ITdTransport
 {
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonObject>> _pending = new();
@@ -38,7 +34,8 @@ public sealed class TdTransport(ILogger<TdTransport> logger) : BackgroundService
         {
             Post(clientId, request);
             var result = await completion.Task.WaitAsync(TimeSpan.FromSeconds(30), ct);
-            if (result["@type"]?.GetValue<string>() == "error") throw new TelegramException(result["code"]!.GetValue<int>());
+            if (result["@type"]?.GetValue<string>() == "error")
+                throw new TelegramException(result["code"]!.GetValue<int>(), result["message"]?.GetValue<string>());
             return result;
         }
         finally { _pending.TryRemove(key, out _); }

@@ -17,8 +17,12 @@ public sealed record SaveConfigurationRequest
 /// <summary>A stable, bounded page with an exact total count.</summary>
 public sealed record PageResponse<T>(IReadOnlyList<T> Items, long Total, int Page, int PageSize);
 /// <summary>One Telegram account's login and connection status; no challenge secrets.</summary>
-public sealed record AccountStatusResponse(Guid AccountId, string AuthorizationState, string ConnectionState, string? Error);
-/// <summary>Submit a Telegram challenge using code, password, email or emailCode.</summary>
+public sealed record AccountStatusResponse(Guid AccountId, string AuthorizationState, string ConnectionState, string? Error,
+    AccountLoginChallenge? Login = null, int? RetryAfterSeconds = null);
+/// <summary>Non-secret information needed to present the current login step.</summary>
+public sealed record AccountLoginChallenge(string Type, string? PhoneNumber = null, string? Delivery = null,
+    int? CodeLength = null, string? PasswordHint = null, string? EmailAddressPattern = null);
+/// <summary>Submit phone (using the saved number), code, password, email or emailCode.</summary>
 public sealed record LoginRequest([property: Required] string Type, [property: Required] string Value);
 /// <summary>Telegram message submission acknowledgement.</summary>
 public sealed record SendReceipt(string MessageId, string Status);

@@ -15,6 +15,8 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : I
             ArgumentException or JsonException or TimeZoneNotFoundException or InvalidTimeZoneException => (400, "Invalid request"),
             InvalidOperationException => (409, "Operation cannot be completed"),
             TelegramException te when te.Code == 429 => (429, "Telegram rate limit"),
+            TelegramException te when te.Code == 409 => (409, "Telegram login step changed"),
+            TelegramException te when te.Code is 400 or 401 or 403 or 406 => (400, "Telegram rejected the request"),
             TelegramException => (502, "Telegram request failed"),
             TimeoutException => (504, "Telegram request timed out"),
             _ => (500, "Service error")
@@ -22,7 +24,11 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : I
         logger.LogWarning("API request {Path} failed with {Type}", context.Request.Path, exception.GetType().Name);
         context.Response.StatusCode = status;
         var detail = exception is ArgumentException or InvalidOperationException or KeyNotFoundException ? exception.Message : title;
-        await Results.Problem(statusCode: status, title: title, detail: detail, instance: context.Request.Path).ExecuteAsync(context);
+        var extensions = exception is TelegramException telegram
+            ? new Dictionary<string, object?> { ["code"] = telegram.ErrorCode, ["retryAfterSeconds"] = telegram.RetryAfterSeconds }
+            : null;
+        await Results.Problem(statusCode: status, title: title, detail: detail, instance: context.Request.Path,
+            extensions: extensions).ExecuteAsync(context);
         return true;
     }
 }

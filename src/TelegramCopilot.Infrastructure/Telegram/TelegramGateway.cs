@@ -17,6 +17,7 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
         public volatile string Auth = "Starting";
         public volatile string Connection = "Unknown";
         public volatile string? Error;
+        public volatile AccountLoginChallenge? Login;
         private long _notBeforeTicks;
         public DateTimeOffset NotBefore
         {
@@ -74,22 +75,49 @@ public sealed partial class TelegramGateway : ITelegramGateway, IAsyncDisposable
     {
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(_sessions.TryGetValue(accountId, out var s)
-            ? new AccountStatusResponse(accountId, s.Auth, s.Connection, s.Error)
+            ? new AccountStatusResponse(accountId, s.Auth, s.Connection, s.Error, s.Login,
+                s.NotBefore > _clock.GetUtcNow() ? (int)Math.Ceiling((s.NotBefore - _clock.GetUtcNow()).TotalSeconds) : null)
             : new(accountId, "Inactive", "Unavailable", NativeError));
     }
     public async Task<AccountStatusResponse> LoginAsync(Guid accountId, LoginRequest request, CancellationToken ct)
     {
         var s = Required(accountId);
+        var expected = s.Auth switch
+        {
+            "authorizationStateWaitPhoneNumber" => "phone",
+            "authorizationStateWaitCode" => "code",
+            "authorizationStateWaitPassword" => "password",
+            "authorizationStateWaitEmailAddress" => "email",
+            "authorizationStateWaitEmailCode" => "emailCode",
+            _ => null
+        };
+        var restart = request.Type == "phone" && s.Auth is "authorizationStateWaitCode" or "authorizationStateWaitEmailCode"
+            or "authorizationStateWaitPassword" or "authorizationStateWaitEmailAddress";
+        if (request.Type != expected && !restart) throw new TelegramException(409, "LOGIN_STATE_CHANGED");
+        if (string.IsNullOrWhiteSpace(request.Value)) throw new ArgumentException("The login value is required.");
+        if (s.NotBefore > _clock.GetUtcNow())
+            throw new TelegramException(429, $"retry after {(int)Math.Ceiling((s.NotBefore - _clock.GetUtcNow()).TotalSeconds)}");
         var command = request.Type switch
         {
+            "phone" => new JsonObject { ["@type"] = "setAuthenticationPhoneNumber", ["phone_number"] = s.Config.Read<AccountSettings>().Phone },
             "code" => new JsonObject { ["@type"] = "checkAuthenticationCode", ["code"] = request.Value },
             "password" => new() { ["@type"] = "checkAuthenticationPassword", ["password"] = request.Value },
             "email" => new() { ["@type"] = "setAuthenticationEmailAddress", ["email_address"] = request.Value },
             "emailCode" => new() { ["@type"] = "checkAuthenticationEmailCode", ["code"] = new JsonObject
                 { ["@type"] = "emailAddressAuthenticationCode", ["code"] = request.Value } },
-            _ => throw new ArgumentException("Login type must be code, password, email or emailCode.")
+            _ => throw new ArgumentException("Login type must be phone, code, password, email or emailCode.")
         };
-        await _transport.Request(s.ClientId, command, ct);
+        try
+        {
+            s.Error = null;
+            await _transport.Request(s.ClientId, command, ct);
+        }
+        catch (TelegramException error)
+        {
+            s.Error = error.ErrorCode;
+            if (error.RetryAfterSeconds is int seconds) s.NotBefore = _clock.GetUtcNow().AddSeconds(seconds);
+            throw;
+        }
         return await StatusAsync(accountId, ct);
     }
     public async Task<Observation> ObserveAsync(Resource target, CancellationToken ct)
