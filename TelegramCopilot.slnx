@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TelegramCopilot.Api/TelegramCopilot.Api.csproj" />
+    <Project Path="src/TelegramCopilot.Application/TelegramCopilot.Application.csproj" />
+    <Project Path="src/TelegramCopilot.Cli/TelegramCopilot.Cli.csproj" />
+    <Project Path="src/TelegramCopilot.Core/TelegramCopilot.Core.csproj" />
+    <Project Path="src/TelegramCopilot.Infrastructure/TelegramCopilot.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TelegramCopilot.Tests/TelegramCopilot.Tests.csproj" />
+  </Folder>
+</Solution>
