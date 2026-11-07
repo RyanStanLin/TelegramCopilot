@@ -5,11 +5,11 @@
 ## Boundaries
 
 - Core: domain aggregates, presence state transitions, calendar recurrence, validation. No Telegram, HTTP, or database dependency.
-- Application: use cases, DTOs, repository and gateway ports; shared by API and CLI.
+- Application: use cases, DTOs, repository and gateway ports; API invokes these use cases and CLI consumes the corresponding HTTP contract.
 - Infrastructure: SQLite WAL, encrypted account/Bark configuration, official TDLib JSON C interface, BarkerSharper, background workers.
 - API: ASP.NET Core minimal APIs, unauthenticated as requested. Bind privately; OpenAPI and Problem Details.
 - CLI: configuration CRUD, login challenges, telemetry/stats/CSV, health, scheduler run history through the same HTTP contract. Daemon ownership remains with API.
-- Web: Next.js server gateway enforces the single passkey. API remains separate. Browser cannot bypass gateway through the production deployment; only web port is published.
+- Web: Next.js server gateway enforces the single passkey. API remains separate and unauthenticated; Compose publishes its port on the host loopback interface. Only the web interface should be exposed through the public HTTPS reverse proxy.
 
 ## Presence semantics
 

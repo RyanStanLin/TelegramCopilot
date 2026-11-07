@@ -1,0 +1,11 @@
+.git
+**/bin
+**/obj
+**/node_modules
+**/.next
+artifacts
+work
+.env*
+data
+**/*.db*
+**/*.binlog

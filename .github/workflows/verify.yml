@@ -1,0 +1,25 @@
+name: Verify
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build TelegramCopilot.slnx /bl:artifacts/build.binlog
+      - run: dotnet test TelegramCopilot.slnx --no-build /bl:artifacts/test.binlog
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm run lint:css
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web

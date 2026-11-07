@@ -1,0 +1,318 @@
+@baseUrl = http://127.0.0.1:5080
+@accountId = 11111111-1111-1111-1111-111111111111
+@targetId = 22222222-2222-2222-2222-222222222222
+@destinationId = 33333333-3333-3333-3333-333333333333
+@id = 44444444-4444-4444-4444-444444444444
+@from = 2026-11-07T00:00:00Z
+@to = 2026-11-08T00:00:00Z
+
+### GET accounts
+GET {{baseUrl}}/api/accounts?page=1&pageSize=25&search=Example
+
+### GET accounts
+GET {{baseUrl}}/api/accounts/{{id}}
+
+### POST accounts
+POST {{baseUrl}}/api/accounts
+Content-Type: application/json
+
+{
+  "name": "Example accounts",
+  "enabled": true,
+  "settings": {
+    "apiId": 12345,
+    "apiHash": "0123456789abcdef0123456789abcdef",
+    "phone": "+886912345678"
+  }
+}
+
+### PUT accounts
+PUT {{baseUrl}}/api/accounts/{{id}}
+Content-Type: application/json
+
+{
+  "name": "Example accounts",
+  "enabled": true,
+  "settings": {
+    "apiId": 12345,
+    "apiHash": "0123456789abcdef0123456789abcdef",
+    "phone": "+886912345678"
+  },
+  "revision": 1
+}
+
+### DELETE accounts
+DELETE {{baseUrl}}/api/accounts/{{id}}?revision=1
+
+### GET targets
+GET {{baseUrl}}/api/targets?page=1&pageSize=25&search=Example
+
+### GET targets
+GET {{baseUrl}}/api/targets/{{id}}
+
+### POST targets
+POST {{baseUrl}}/api/targets
+Content-Type: application/json
+
+{
+  "name": "Example targets",
+  "enabled": true,
+  "settings": {
+    "accountId": "{{accountId}}",
+    "identifier": "@alice",
+    "refreshSeconds": 30
+  }
+}
+
+### PUT targets
+PUT {{baseUrl}}/api/targets/{{id}}
+Content-Type: application/json
+
+{
+  "name": "Example targets",
+  "enabled": true,
+  "settings": {
+    "accountId": "{{accountId}}",
+    "identifier": "@alice",
+    "refreshSeconds": 30
+  },
+  "revision": 1
+}
+
+### DELETE targets
+DELETE {{baseUrl}}/api/targets/{{id}}?revision=1
+
+### GET schedules
+GET {{baseUrl}}/api/schedules?page=1&pageSize=25&search=Example
+
+### GET schedules
+GET {{baseUrl}}/api/schedules/{{id}}
+
+### POST schedules
+POST {{baseUrl}}/api/schedules
+Content-Type: application/json
+
+{
+  "name": "Example schedules",
+  "enabled": true,
+  "settings": {
+    "accountId": "{{accountId}}",
+    "recipient": "@some_bot",
+    "message": "hello",
+    "frequency": "Weekly",
+    "timeZone": "Asia/Taipei",
+    "localTime": "07:59:00",
+    "dayOfWeek": 1,
+    "dayOfMonth": 1,
+    "month": 1
+  }
+}
+
+### PUT schedules
+PUT {{baseUrl}}/api/schedules/{{id}}
+Content-Type: application/json
+
+{
+  "name": "Example schedules",
+  "enabled": true,
+  "settings": {
+    "accountId": "{{accountId}}",
+    "recipient": "@some_bot",
+    "message": "hello",
+    "frequency": "Weekly",
+    "timeZone": "Asia/Taipei",
+    "localTime": "07:59:00",
+    "dayOfWeek": 1,
+    "dayOfMonth": 1,
+    "month": 1
+  },
+  "revision": 1
+}
+
+### DELETE schedules
+DELETE {{baseUrl}}/api/schedules/{{id}}?revision=1
+
+### GET destinations
+GET {{baseUrl}}/api/destinations?page=1&pageSize=25&search=Example
+
+### GET destinations
+GET {{baseUrl}}/api/destinations/{{id}}
+
+### POST destinations
+POST {{baseUrl}}/api/destinations
+Content-Type: application/json
+
+{
+  "name": "Example destinations",
+  "enabled": true,
+  "settings": {
+    "serverUrl": "https://api.day.app",
+    "deviceKeys": [
+      "REPLACE_DEVICE_KEY"
+    ],
+    "encryption": null
+  }
+}
+
+### PUT destinations
+PUT {{baseUrl}}/api/destinations/{{id}}
+Content-Type: application/json
+
+{
+  "name": "Example destinations",
+  "enabled": true,
+  "settings": {
+    "serverUrl": "https://api.day.app",
+    "deviceKeys": [
+      "REPLACE_DEVICE_KEY"
+    ],
+    "encryption": null
+  },
+  "revision": 1
+}
+
+### DELETE destinations
+DELETE {{baseUrl}}/api/destinations/{{id}}?revision=1
+
+### GET rules
+GET {{baseUrl}}/api/rules?page=1&pageSize=25&search=Example
+
+### GET rules
+GET {{baseUrl}}/api/rules/{{id}}
+
+### POST rules
+POST {{baseUrl}}/api/rules
+Content-Type: application/json
+
+{
+  "name": "Example rules",
+  "enabled": true,
+  "settings": {
+    "destinationId": "{{destinationId}}",
+    "event": "Offline",
+    "targetId": "{{targetId}}",
+    "title": "{NAME}",
+    "body": "Online for {TIME_OF_ONLINE}",
+    "subtitle": "Presence",
+    "group": "{NAME}",
+    "parameters": {
+      "sound": "bell"
+    }
+  }
+}
+
+### PUT rules
+PUT {{baseUrl}}/api/rules/{{id}}
+Content-Type: application/json
+
+{
+  "name": "Example rules",
+  "enabled": true,
+  "settings": {
+    "destinationId": "{{destinationId}}",
+    "event": "Offline",
+    "targetId": "{{targetId}}",
+    "title": "{NAME}",
+    "body": "Online for {TIME_OF_ONLINE}",
+    "subtitle": "Presence",
+    "group": "{NAME}",
+    "parameters": {
+      "sound": "bell"
+    }
+  },
+  "revision": 1
+}
+
+### DELETE rules
+DELETE {{baseUrl}}/api/rules/{{id}}?revision=1
+
+### GET settings
+GET {{baseUrl}}/api/settings?page=1&pageSize=25&search=Example
+
+### GET settings
+GET {{baseUrl}}/api/settings/{{id}}
+
+### POST settings
+POST {{baseUrl}}/api/settings
+Content-Type: application/json
+
+{
+  "name": "Example settings",
+  "enabled": true,
+  "settings": {
+    "timeZone": "Asia/Taipei",
+    "heartbeatSeconds": 1,
+    "staleAfterSeconds": 5,
+    "schedulerGraceSeconds": 60
+  }
+}
+
+### PUT settings
+PUT {{baseUrl}}/api/settings/{{id}}
+Content-Type: application/json
+
+{
+  "name": "Example settings",
+  "enabled": true,
+  "settings": {
+    "timeZone": "Asia/Taipei",
+    "heartbeatSeconds": 1,
+    "staleAfterSeconds": 5,
+    "schedulerGraceSeconds": 60
+  },
+  "revision": 1
+}
+
+### DELETE settings
+DELETE {{baseUrl}}/api/settings/{{id}}?revision=1
+
+### /health/live
+GET {{baseUrl}}/health/live
+
+### /api/health
+GET {{baseUrl}}/api/health
+
+### /openapi/v1.json
+GET {{baseUrl}}/openapi/v1.json
+
+### /api/accounts/{{accountId}}/status
+GET {{baseUrl}}/api/accounts/{{accountId}}/status
+
+### /api/targets/{{targetId}}/timeline?from={{from}}&to={{to}}&page=1&pageSize=25&state=Online
+GET {{baseUrl}}/api/targets/{{targetId}}/timeline?from={{from}}&to={{to}}&page=1&pageSize=25&state=Online
+
+### /api/targets/{{targetId}}/statistics?from={{from}}&to={{to}}&period=day&timeZone=Asia%2FTaipei
+GET {{baseUrl}}/api/targets/{{targetId}}/statistics?from={{from}}&to={{to}}&period=day&timeZone=Asia%2FTaipei
+
+### /api/targets/{{targetId}}/export.csv?from={{from}}&to={{to}}
+GET {{baseUrl}}/api/targets/{{targetId}}/export.csv?from={{from}}&to={{to}}
+
+### /api/events?from={{from}}&to={{to}}&type=Error&page=1&pageSize=25
+GET {{baseUrl}}/api/events?from={{from}}&to={{to}}&type=Error&page=1&pageSize=25
+
+### /api/deliveries?channel=Telegram&page=1&pageSize=25
+GET {{baseUrl}}/api/deliveries?channel=Telegram&page=1&pageSize=25
+
+### Submit code challenge
+POST {{baseUrl}}/api/accounts/{{accountId}}/login
+Content-Type: application/json
+
+{"type": "code", "value": "12345"}
+
+### Submit password challenge
+POST {{baseUrl}}/api/accounts/{{accountId}}/login
+Content-Type: application/json
+
+{"type": "password", "value": "REPLACE_2FA"}
+
+### Submit email challenge
+POST {{baseUrl}}/api/accounts/{{accountId}}/login
+Content-Type: application/json
+
+{"type": "email", "value": "owner@example.com"}
+
+### Submit emailCode challenge
+POST {{baseUrl}}/api/accounts/{{accountId}}/login
+Content-Type: application/json
+
+{"type": "emailCode", "value": "12345"}
