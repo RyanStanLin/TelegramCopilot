@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddSingleton<ITdTransport>(p => p.GetRequiredService<TdTransport>());
         services.AddHostedService(p => p.GetRequiredService<TdTransport>());
         services.AddSingleton<ITelegramGateway, TelegramGateway>();
+        services.AddSingleton<NotificationAvatar>();
         services.AddSingleton<IBarkGateway, BarkGateway>();
         services.AddHostedService<MonitorWorker>();
         services.AddHostedService<SchedulerWorker>();

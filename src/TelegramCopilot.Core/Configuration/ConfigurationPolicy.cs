@@ -39,6 +39,8 @@ public static partial class ConfigurationPolicy
                     throw new ArgumentException("Rule requires destination, event, title and body.");
                 if (rule.Parameters is { ValueKind: not System.Text.Json.JsonValueKind.Object })
                     throw new ArgumentException("Bark parameters must be a JSON object.");
+                if (rule.Language is not (null or "zh-CN" or "en"))
+                    throw new ArgumentException("Notification language must be zh-CN or en.");
                 break;
             case ResourceKind.Settings:
                 var system = resource.Read<SystemSettings>();

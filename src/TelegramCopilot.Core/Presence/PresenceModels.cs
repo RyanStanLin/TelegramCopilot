@@ -12,7 +12,8 @@ public sealed record PresenceInterval(long Id, Guid TargetId, PresenceState Stat
     public double Seconds(DateTimeOffset until) => Math.Max(0, ((End ?? until) - Start).TotalSeconds);
 }
 public sealed record MonitorEvent(long Id, Guid? TargetId, Guid? AccountId, string Name,
-    Configuration.EventType Type, DateTimeOffset At, double? OnlineSeconds, string Detail);
+    Configuration.EventType Type, DateTimeOffset At, double? OnlineSeconds, string Detail,
+    bool ConfirmedOnlineToOffline = false);
 
 public static class PresenceTimeline
 {

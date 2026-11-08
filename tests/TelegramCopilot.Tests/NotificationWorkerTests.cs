@@ -18,8 +18,8 @@ public sealed class NotificationWorkerTests
         var rule = await s.Configuration.SaveAsync(ResourceKind.Rules, null,
             TestStore.Request("Offline rule", new RuleSettings(destination.Id, EventType.Offline, target.Id, "{NAME}", "{TIME_OF_ONLINE}")), default);
         await s.Telemetry.EventAsync(new(0, target.Id, account.Id, "Alice", EventType.Online, s.Clock.Now, null, "Push"), default);
-        await s.Telemetry.EventAsync(new(0, Guid.NewGuid(), account.Id, "Other", EventType.Offline, s.Clock.Now, 5, "Push"), default);
-        await s.Telemetry.EventAsync(new(0, target.Id, account.Id, "Alice", EventType.Offline, s.Clock.Now, 65, "Push"), default);
+        await s.Telemetry.EventAsync(new(0, Guid.NewGuid(), account.Id, "Other", EventType.Offline, s.Clock.Now, 5, "Push", true), default);
+        await s.Telemetry.EventAsync(new(0, target.Id, account.Id, "Alice", EventType.Offline, s.Clock.Now, 65, "Push", true), default);
         var bark = new DeviceGateway();
         using var worker = new NotificationWorker(s.Configs, s.Telemetry, s.Deliveries, bark, s.Clock, NullLogger<NotificationWorker>.Instance);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));

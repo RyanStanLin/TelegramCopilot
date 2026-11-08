@@ -49,9 +49,9 @@ public sealed class RuleValidationService(IConfigurationRepository configs, Time
         if (errors.Count > 0) return new(false, errors, warnings, null);
         var value = TestEvent(rule, target, clock.GetUtcNow());
         return new(true, errors, warnings, new(destination!.Name, destination.Read<DestinationSettings>().DeviceKeys.Distinct().Count(),
-            TemplateRenderer.Render(rule.Title, value), TemplateRenderer.Render(rule.Body, value),
-            rule.Subtitle is null ? null : TemplateRenderer.Render(rule.Subtitle, value),
-            rule.Group is null ? null : TemplateRenderer.Render(rule.Group, value), rule.Event.ToString(), value.OnlineSeconds));
+            TemplateRenderer.Render(rule.Title, value, rule.Language), TemplateRenderer.Render(rule.Body, value, rule.Language),
+            rule.Subtitle is null ? null : TemplateRenderer.Render(rule.Subtitle, value, rule.Language),
+            rule.Group is null ? null : TemplateRenderer.Render(rule.Group, value, rule.Language), rule.Event.ToString(), value.OnlineSeconds));
     }
     private static void CheckTemplate(string field, string? text, List<ConfigurationIssue> errors)
     {

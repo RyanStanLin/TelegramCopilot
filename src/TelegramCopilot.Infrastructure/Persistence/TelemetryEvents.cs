@@ -16,11 +16,11 @@ public sealed partial class TelemetryRepository
     private static async Task<long> InsertEvent(SqliteConnection c, MonitorEvent value, CancellationToken ct)
     {
         using var cmd = Database.Command(c, """
-            INSERT INTO events(target_id,account_id,name,type,at,online_seconds,detail)
-            VALUES($target,$account,$name,$type,$at,$seconds,$detail); SELECT last_insert_rowid();
+            INSERT INTO events(target_id,account_id,name,type,at,online_seconds,detail,confirmed_offline)
+            VALUES($target,$account,$name,$type,$at,$seconds,$detail,$confirmed); SELECT last_insert_rowid();
             """, ("$target", value.TargetId?.ToString()), ("$account", value.AccountId?.ToString()),
             ("$name", value.Name), ("$type", value.Type.ToString()), ("$at", Database.Ms(value.At)),
-            ("$seconds", value.OnlineSeconds), ("$detail", value.Detail));
+            ("$seconds", value.OnlineSeconds), ("$detail", value.Detail), ("$confirmed", value.ConfirmedOnlineToOffline));
         return (long)(await cmd.ExecuteScalarAsync(ct))!;
     }
     public async Task<PageResponse<EventResponse>> EventsAsync(Guid? targetId, string? type, DateTimeOffset from,
@@ -59,5 +59,5 @@ public sealed partial class TelemetryRepository
     }
     private static MonitorEvent ReadEvent(SqliteDataReader r) => new(r.GetInt64(0), r.IsDBNull(1) ? null : Guid.Parse(r.GetString(1)),
         r.IsDBNull(2) ? null : Guid.Parse(r.GetString(2)), r.GetString(3), Enum.Parse<EventType>(r.GetString(4)),
-        Database.At(r.GetInt64(5)), r.IsDBNull(6) ? null : r.GetDouble(6), r.GetString(7));
+        Database.At(r.GetInt64(5)), r.IsDBNull(6) ? null : r.GetDouble(6), r.GetString(7), r.GetBoolean(9));
 }

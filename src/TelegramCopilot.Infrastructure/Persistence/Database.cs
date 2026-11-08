@@ -59,6 +59,10 @@ public sealed class Database
             await Exec(c, "ALTER TABLE intervals ADD COLUMN expires_at INTEGER", ct);
         await Exec(c, "INSERT OR IGNORE INTO schema_version VALUES(2)", ct);
         await Exec(c, "INSERT OR IGNORE INTO schema_version VALUES(3)", ct);
+        using var offlineColumn = Command(c, "SELECT name FROM pragma_table_info('events') WHERE name='confirmed_offline'");
+        if (await offlineColumn.ExecuteScalarAsync(ct) is null)
+            await Exec(c, "ALTER TABLE events ADD COLUMN confirmed_offline INTEGER NOT NULL DEFAULT 0", ct);
+        await Exec(c, "INSERT OR IGNORE INTO schema_version VALUES(4)", ct);
     }
     internal static async Task<int> Exec(SqliteConnection c, string sql, CancellationToken ct,
         params (string Name, object? Value)[] parameters)

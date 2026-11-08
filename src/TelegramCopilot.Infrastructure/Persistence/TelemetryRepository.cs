@@ -45,7 +45,8 @@ public sealed partial class TelemetryRepository(Database db) : ITelemetryReposit
                 ("$reason", o.Reason), ("$observed", Database.Ms(o.ObservedAt)),
                 ("$telegram", o.TelegramAt is { } t ? Database.Ms(t) : null), ("$known", transitionKnown),
                 ("$expires", o.ExpiresAt is { } expires ? Database.Ms(expires) : null));
-            await InsertEvent(c, new(0, o.TargetId, accountId, name, decision.Event, boundary, decision.OnlineSeconds, o.Reason), ct);
+            await InsertEvent(c, new(0, o.TargetId, accountId, name, decision.Event, boundary, decision.OnlineSeconds, o.Reason,
+                decision.BoundaryKnown && previous?.State == PresenceState.Online && o.State == PresenceState.Offline), ct);
             if (decision.Restored)
                 await InsertEvent(c, new(0, o.TargetId, accountId, name, EventType.MonitorRestored, o.ObservedAt, null, "Observation resumed"), ct);
             transaction.Commit();

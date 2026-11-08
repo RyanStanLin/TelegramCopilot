@@ -3,9 +3,11 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.Configuration;
 using TelegramCopilot.Core.Configuration;
 using TelegramCopilot.Core.Presence;
 using TelegramCopilot.Infrastructure.Notifications;
+using TelegramCopilot.Infrastructure.Persistence;
 
 namespace TelegramCopilot.Tests;
 
@@ -14,6 +16,11 @@ public sealed class BarkIntegrationTests
     [Fact]
     public async Task BarkerSharper_TransmitsTemplatesParametersAndEachDeviceKey()
     {
+        await using var store = new TestStore(); await store.Initialize(); var account = await store.Account(); var configured = await store.Target(account.Id);
+        var target = (await store.Configs.FindAsync(configured.Id, default))!; var monitoring = new MonitoringRepository(store.Database);
+        await monitoring.ObserveAsync(target, new(target.Id, PresenceState.Offline, store.Clock.Now, "Push",
+            Profile: new(42, "Larry", "", "larry", 7, "photo-1"), TelegramStatus: "userStatusOffline"), default);
+        var settings = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PublicApiOrigin"] = "https://api.example.com" }).Build();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
@@ -44,10 +51,10 @@ public sealed class BarkIntegrationTests
                 }
             }, timeout.Token);
             var destination = new DestinationSettings($"http://127.0.0.1:{port}", ["first-test-key", "second-test-key"]);
-            var parameters = JsonSerializer.SerializeToElement(new { level = "timeSensitive", sound = "bell", volume = 7, device_key = "must-not-override", url = "https://example.com" });
+            var parameters = JsonSerializer.SerializeToElement(new { level = "timeSensitive", sound = "bell", volume = 7, device_key = "must-not-override", url = "https://example.com", icon = "https://wrong.example/icon" });
             var rule = new RuleSettings(Guid.NewGuid(), EventType.Offline, null, "{NAME}", "Online {TIME_OF_ONLINE}", "{NAME} {EVENT}", "presence-{NAME}", parameters);
-            var value = new MonitorEvent(1, null, null, "Alice", EventType.Offline, DateTimeOffset.UnixEpoch, 65, "Push");
-            await new BarkGateway().SendAsync(destination, rule, value, timeout.Token);
+            var value = new MonitorEvent(1, target.Id, account.Id, "Alice", EventType.Offline, store.Clock.Now, 65, "Push");
+            await new BarkGateway(new NotificationAvatar(settings, store.Configs, monitoring, store.Clock)).SendAsync(destination, rule, value, timeout.Token);
             await server;
             Assert.Equal(new[] { "first-test-key", "second-test-key" }, received.Select(x => x["device_key"]!.ToString()));
             Assert.All(received, payload =>
@@ -59,6 +66,7 @@ public sealed class BarkIntegrationTests
                 Assert.Equal("timeSensitive", payload["level"]!.ToString());
                 Assert.Equal(7, payload["volume"]!.GetValue<int>());
                 Assert.Equal("https://example.com", payload["url"]!.ToString());
+                Assert.StartsWith($"https://api.example.com/api/targets/{target.Id}/avatar?v=", payload["icon"]!.ToString());
             });
         }
         finally { listener.Stop(); }

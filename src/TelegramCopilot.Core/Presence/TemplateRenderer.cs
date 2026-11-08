@@ -4,10 +4,10 @@ namespace TelegramCopilot.Core.Presence;
 
 public static class TemplateRenderer
 {
-    public static string Render(string template, MonitorEvent value)
+    public static string Render(string template, MonitorEvent value, string? language = null)
     {
         var seconds = value.OnlineSeconds;
-        var duration = seconds is { } s ? DurationText.Format(s) : "unknown";
+        var duration = seconds is { } s ? DurationText.Format(s, language) : language == "zh-CN" ? "未知" : "unknown";
         var replacements = new Dictionary<string, string>
         {
             ["NAME"] = value.Name, ["EVENT"] = value.Type.ToString(), ["TIME_OF_ONLINE"] = duration,

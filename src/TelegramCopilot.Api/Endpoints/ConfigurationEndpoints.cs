@@ -8,6 +8,8 @@ public static class ConfigurationEndpoints
 {
     public static void MapConfigurations(this WebApplication app)
     {
+        app.MapGet("/api/rules/templates", (string language = "zh-CN") => TypedResults.Ok(RuleTemplates.ForLanguage(language)))
+            .WithName("RuleTemplates").WithSummary("Read localized built-in notification templates and recommended Bark defaults");
         foreach (var kind in Enum.GetValues<ResourceKind>())
         {
             var group = app.MapGroup("/api/" + kind.ToString().ToLowerInvariant()).WithTags(kind.ToString());

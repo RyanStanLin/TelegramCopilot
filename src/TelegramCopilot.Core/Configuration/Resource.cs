@@ -26,7 +26,7 @@ public enum EventType { Online, Offline, Unknown, MonitorRestored, AccountReady,
     WorkerStarted, WorkerStopped, MessageSent, MessageFailed, Error }
 public sealed record RuleSettings(Guid DestinationId, EventType Event, Guid? TargetId = null,
     string Title = "{NAME}", string Body = "{EVENT} {TIME_OF_ONLINE}",
-    string? Subtitle = null, string? Group = null, JsonElement? Parameters = null);
+    string? Subtitle = null, string? Group = null, JsonElement? Parameters = null, string? Language = null);
 public sealed record EncryptionSettings(string Key, string IV, string Mode = "CBC");
 public sealed record DestinationSettings(string ServerUrl, string[] DeviceKeys, EncryptionSettings? Encryption = null);
 public sealed record SystemSettings(string TimeZone = "Asia/Taipei", int HeartbeatSeconds = 1,

@@ -18,6 +18,11 @@ public sealed class NotificationWorker(IConfigurationRepository configs, ITeleme
             {
                 var value = await telemetry.NextNotificationEventAsync(ct);
                 if (value is null) { await Task.Delay(500, ct); continue; }
+                if (value.Type == EventType.Offline && !value.ConfirmedOnlineToOffline)
+                {
+                    await telemetry.CompleteNotificationEventAsync(value.Id, ct);
+                    continue;
+                }
                 var all = await configs.ListAsync(null, ct);
                 foreach (var resource in all.Where(x => x.Kind == ResourceKind.Rules && x.Enabled && x.CreatedAt <= value.At))
                 {

@@ -72,6 +72,10 @@ PUT 在信封中另加 `revision`。Secret 字段返回 `***`，更新时原样�
 
 `targetId=null` 匹配该事件的全部对象。事件为 Online, Offline, Unknown, MonitorRestored, AccountReady, AccountUnavailable, WorkerStarted, WorkerStopped, MessageSent, MessageFailed, Error。
 
+自动离线通知仅匹配已经确认的 Online → Offline 转换。首次离线、Unknown 后恢复、在线状态过期和服务重启后的离线快照保留在历史中，但不推送；旧的待发送离线记录也不推测为有效转换。手动测试是明确发起的模拟通知。
+
+可选 `language` 为 `zh-CN` 或 `en`，决定模板内时长的语言；省略时保留旧模板行为。监控对象通知的 `icon` 自动取该对象的 Telegram 头像，覆盖规则里不属于它的图标。服务端 `PublicApiOrigin` 设置为头像可访问的 API 域名；没有头像时不附加其他人的图标。
+
 模板变量：`NAME`, `EVENT`, `TIME_OF_ONLINE`（自适应时长，如 `1s`、`1分钟`、`2小时32分1秒`），`ONLINE_SECONDS`，`AT`，`DETAIL`，`TARGET_ID`，`ACCOUNT_ID`，使用 `{VARIABLE}`。中断或首次观测的完整在线时长无法确定时为 `unknown`，不会把部分时长冒充完整时长。
 
 `parameters` 支持 BarkerSharper ExtendedModel 的 level / badge / autoCopy / copy / sound / call / icon / group / volume / isArchive / url 等参数；还可透传库尚未建模的 Bark 字段，例如 subtitle。rule 顶层 title/body/subtitle/group 优先。设备密钥、密文及 IV 不能通过 parameters 覆盖。参数字符串支持同样的模板变量。BarkerSharper 没有取消参数，超时结果可能为 Uncertain，实际网络请求可能已经送达。
