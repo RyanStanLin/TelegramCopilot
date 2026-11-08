@@ -17,7 +17,7 @@ public sealed class MonitoringService(IConfigurationRepository configs, IMonitor
     {
         var totals = await monitoring.TotalsAsync(ct);
         return new(clock.GetUtcNow(), await operations.HealthAsync(ct), totals.Count,
-            (await configs.ListAsync(ResourceKind.Targets, ct)).Count(x => x.Enabled), totals.LastPoll);
+            (await configs.ListAsync(ResourceKind.Targets, ct)).Count(x => x.Enabled), totals.LastPoll, totals.Successful, totals.Failed);
     }
     public async Task<TargetMonitoringResponse> TargetAsync(Guid id, CancellationToken ct)
     {

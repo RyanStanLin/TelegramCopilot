@@ -7,6 +7,26 @@ namespace TelegramCopilot.Tests;
 public sealed class MonitoringRepositoryTests
 {
     [Fact]
+    public async Task Totals_AggregateCompletedChecksAcrossTargetsAndExcludePendingResults()
+    {
+        await using var s = new TestStore(); await s.Initialize(); var account = await s.Account();
+        var alice = await s.Target(account.Id);
+        var bob = await s.Configuration.SaveAsync(ResourceKind.Targets, null, TestStore.Request("Bob", new TargetSettings(account.Id, "@bob")), default);
+        var a = (await s.Configs.FindAsync(alice.Id, default))!; var b = (await s.Configs.FindAsync(bob.Id, default))!;
+        var repository = new MonitoringRepository(s.Database); var at = s.Clock.Now;
+        Assert.Equal((0L, (DateTimeOffset?)null, 0L, 0L), await repository.TotalsAsync(default));
+        await repository.StartPollAsync(a, at, at.AddSeconds(30), default);
+        await repository.CompletePollAsync(a, new(a.Id, PresenceState.Unknown, at.AddSeconds(1), "userStatusRecently"), null, default);
+        await repository.StartPollAsync(b, at.AddSeconds(2), at.AddSeconds(32), default);
+        await repository.CompletePollAsync(b, new(b.Id, PresenceState.Unknown, at.AddSeconds(3), "ConnectionUnavailable"), null, default);
+        await repository.StartPollAsync(a, at.AddSeconds(30), at.AddSeconds(60), default);
+        await s.Initialize();
+        Assert.Equal((3L, (DateTimeOffset?)at.AddSeconds(3), 1L, 1L), await repository.TotalsAsync(default));
+        await repository.RecoverAsync(at.AddSeconds(40), default);
+        Assert.Equal((3L, (DateTimeOffset?)at.AddSeconds(40), 1L, 2L), await repository.TotalsAsync(default));
+    }
+
+    [Fact]
     public async Task PollCounters_PersistAcrossReinitializationAndReadsDoNotIncrementThem()
     {
         await using var s = new TestStore(); await s.Initialize(); var account = await s.Account(); var configured = await s.Target(account.Id);
@@ -20,7 +40,7 @@ public sealed class MonitoringRepositoryTests
         var result = await repository.GetAsync(target, at.AddSeconds(2), default);
         Assert.Equal(1, result.PollCount); Assert.Equal(1, result.SuccessfulPollCount); Assert.Equal(0, result.FailedPollCount);
         Assert.Equal(at.AddSeconds(1), result.LastSuccessfulPollAt); Assert.False(result.IsPolling);
-        Assert.Equal((1L, (DateTimeOffset?)at.AddSeconds(1)), await repository.TotalsAsync(default));
+        Assert.Equal((1L, (DateTimeOffset?)at.AddSeconds(1), 1L, 0L), await repository.TotalsAsync(default));
     }
 
     [Fact]

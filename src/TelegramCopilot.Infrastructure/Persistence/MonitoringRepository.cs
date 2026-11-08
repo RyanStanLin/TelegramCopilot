@@ -76,12 +76,12 @@ public sealed class MonitoringRepository(Database db) : IMonitoringRepository
             current && !r.IsDBNull(13) ? r.GetString(13) : null,
             target.Enabled && current && At(7) is { } start && (At(8) is not { } end || start > end), now, response);
     }
-    public async Task<(long Count, DateTimeOffset? LastPoll)> TotalsAsync(CancellationToken ct)
+    public async Task<(long Count, DateTimeOffset? LastPoll, long Successful, long Failed)> TotalsAsync(CancellationToken ct)
     {
         await using var c = await db.Open(ct);
-        using var command = Database.Command(c, "SELECT COALESCE(SUM(poll_count),0),MAX(completed) FROM target_monitoring");
+        using var command = Database.Command(c, "SELECT COALESCE(SUM(poll_count),0),MAX(completed),COALESCE(SUM(succeeded),0),COALESCE(SUM(failed),0) FROM target_monitoring");
         await using var r = await command.ExecuteReaderAsync(ct); await r.ReadAsync(ct);
-        return (r.GetInt64(0), r.IsDBNull(1) ? null : Database.At(r.GetInt64(1)));
+        return (r.GetInt64(0), r.IsDBNull(1) ? null : Database.At(r.GetInt64(1)), r.GetInt64(2), r.GetInt64(3));
     }
     public async Task RecoverAsync(DateTimeOffset at, CancellationToken ct)
     {

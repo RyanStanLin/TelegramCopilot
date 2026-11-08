@@ -10,6 +10,6 @@ public interface IMonitoringRepository
     Task CompletePollAsync(Resource target, Observation result, string? error, CancellationToken ct);
     Task ObserveAsync(Resource target, Observation observation, CancellationToken ct);
     Task<TargetMonitoringResponse> GetAsync(Resource target, DateTimeOffset now, CancellationToken ct);
-    Task<(long Count, DateTimeOffset? LastPoll)> TotalsAsync(CancellationToken ct);
+    Task<(long Count, DateTimeOffset? LastPoll, long Successful, long Failed)> TotalsAsync(CancellationToken ct);
     Task RecoverAsync(DateTimeOffset at, CancellationToken ct);
 }

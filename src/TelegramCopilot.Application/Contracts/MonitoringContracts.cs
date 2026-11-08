@@ -14,4 +14,5 @@ public sealed record TargetMonitoringResponse(Guid TargetId, bool Enabled, long 
 public sealed record TargetActivityResponse(string TimeZone, StatisticsBucket Today, StatisticsBucket Week);
 /// <summary>Worker liveness and the lifetime total of actual scheduled target checks.</summary>
 public sealed record MonitoringOverviewResponse(DateTimeOffset Now, HealthResponse Health,
-    long PollCount, int EnabledTargets, DateTimeOffset? LastPollAt);
+    long PollCount, int EnabledTargets, DateTimeOffset? LastPollAt,
+    long SuccessfulPollCount = 0, long FailedPollCount = 0);
