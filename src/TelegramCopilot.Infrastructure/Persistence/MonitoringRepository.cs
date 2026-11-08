@@ -23,6 +23,7 @@ public sealed class MonitoringRepository(Database db) : IMonitoringRepository
                 poll_count=poll_count+1,started=$at,next_poll=$next,error=NULL
             """, ct, ("$id", target.Id.ToString()), ("$account", settings.AccountId.ToString()),
             ("$identifier", settings.Identifier), ("$revision", target.Revision), ("$at", Database.Ms(at)), ("$next", Database.Ms(next)));
+        db.Changes.Publish();
     }
     public async Task CompletePollAsync(Resource target, Observation result, string? error, CancellationToken ct)
     {
@@ -36,6 +37,7 @@ public sealed class MonitoringRepository(Database db) : IMonitoringRepository
             """, ct, ("$id", target.Id.ToString()), ("$revision", target.Revision), ("$at", Database.Ms(result.ObservedAt)),
             ("$success", succeeded ? 1 : 0), ("$failure", succeeded ? 0 : 1), ("$reason", result.Reason),
             ("$error", error ?? (succeeded ? null : result.Reason)));
+        db.Changes.Publish();
     }
     public async Task ObserveAsync(Resource target, Observation o, CancellationToken ct)
     {
@@ -56,6 +58,7 @@ public sealed class MonitoringRepository(Database db) : IMonitoringRepository
             ("$profile", o.Profile is null ? null : JsonSerializer.Serialize(o.Profile)), ("$telegram", o.TelegramStatus),
             ("$seen", o.TelegramStatus == "userStatusOffline" && o.TelegramAt is { } seen ? Database.Ms(seen) : null), ("$at", Database.Ms(o.ObservedAt)),
             ("$telegram_at", o.TelegramStatus is not null || o.Profile is not null ? Database.Ms(o.ObservedAt) : null));
+        db.Changes.Publish();
     }
     public async Task<TargetMonitoringResponse> GetAsync(Resource target, DateTimeOffset now, CancellationToken ct)
     {

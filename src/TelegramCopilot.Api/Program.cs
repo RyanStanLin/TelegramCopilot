@@ -4,6 +4,7 @@ using TelegramCopilot.Api.Middleware;
 using TelegramCopilot.Infrastructure;
 using TelegramCopilot.Infrastructure.Persistence;
 using TelegramCopilot.Application.Ports;
+using TelegramCopilot.Api.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 if (string.IsNullOrWhiteSpace(builder.Configuration["Urls"]))
@@ -12,6 +13,8 @@ var dataPath = builder.Configuration["DATA_PATH"] ?? builder.Configuration["Data
 Directory.CreateDirectory(dataPath);
 using var workerLock = new FileStream(Path.Combine(dataPath, "worker.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 builder.Services.AddTelegramCopilot(dataPath);
+builder.Services.AddSingleton<LiveSnapshots>();
+builder.Services.AddSingleton<LiveConnection>();
 builder.Services.AddValidation();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
@@ -29,11 +32,13 @@ await app.Services.GetRequiredService<IDeliveryRepository>().RecoverAsync(DateTi
 await app.Services.GetRequiredService<IMonitoringRepository>().RecoverAsync(DateTimeOffset.UtcNow, CancellationToken.None);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20), KeepAliveTimeout = TimeSpan.FromSeconds(10) });
 app.MapOpenApi();
 app.MapConfigurations();
 app.MapTelemetry();
 app.MapOperations();
 app.MapMonitoring();
+app.MapRealtime();
 app.MapManualTests();
 app.Run();
 

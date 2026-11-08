@@ -84,6 +84,7 @@ public sealed partial class TelemetryRepository(Database db) : ITelemetryReposit
     {
         await using var c = await db.Open(ct);
         await Database.Exec(c, "INSERT INTO worker VALUES(1,$at) ON CONFLICT(id) DO UPDATE SET heartbeat=$at", ct, ("$at", Database.Ms(at)));
+        db.Changes.Publish();
     }
     private static async Task<PresenceInterval?> OpenInterval(SqliteConnection c, Guid targetId, CancellationToken ct)
     {

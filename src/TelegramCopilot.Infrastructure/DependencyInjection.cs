@@ -15,6 +15,7 @@ public static class DependencyInjection
     {
         var db = new Database(dataPath);
         services.AddSingleton(db);
+        services.AddSingleton<IRealtimeChanges>(db.Changes);
         services.AddDataProtection().SetApplicationName("TelegramCopilot")
             .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(db.DirectoryPath, "keys")));
         services.AddSingleton(TimeProvider.System);

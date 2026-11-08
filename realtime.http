@@ -1,0 +1,11 @@
+@baseUrl = http://127.0.0.1:5080
+
+### A normal HTTP request receives 426 Upgrade Required
+GET {{baseUrl}}/api/live
+
+### WebSocket handshake; subscribe frames are documented in README.md
+GET {{baseUrl}}/api/live
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==

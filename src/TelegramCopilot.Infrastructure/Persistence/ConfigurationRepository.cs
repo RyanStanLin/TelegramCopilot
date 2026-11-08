@@ -33,6 +33,7 @@ public sealed class ConfigurationRepository(Database db, IDataProtectionProvider
             : await Database.Exec(c, "UPDATE resources SET body=$body,revision=$revision WHERE id=$id AND revision=$old AND deleted=0", ct,
                 ("$id", value.Id.ToString()), ("$body", body), ("$revision", value.Revision), ("$old", previousRevision));
         if (count == 0) throw new InvalidOperationException("Revision conflict. Reload before saving.");
+        db.Changes.Publish();
     }
     public async Task DeleteAsync(Guid id, long revision, DateTimeOffset at, CancellationToken ct)
     {
@@ -41,6 +42,7 @@ public sealed class ConfigurationRepository(Database db, IDataProtectionProvider
         var tombstone = _protector.Protect(JsonSerializer.Serialize(resource with { Enabled = false, DeletedAt = at, UpdatedAt = at }, JsonDefaults.Options));
         if (await Database.Exec(c, "UPDATE resources SET deleted=1,body=$body WHERE id=$id AND revision=$revision AND deleted=0", ct,
             ("$id", id.ToString()), ("$revision", revision), ("$body", tombstone)) == 0) throw new InvalidOperationException("Revision conflict. Reload before deleting.");
+        db.Changes.Publish();
     }
     private Resource Read(string s) => JsonSerializer.Deserialize<Resource>(_protector.Unprotect(s), JsonDefaults.Options)!;
 }

@@ -95,6 +95,9 @@ public sealed partial class TelegramGateway
             }
             else _sendResults[key] = data.DeepClone().AsObject();
         }
+        if (type is "updateAuthorizationState" or "updateConnectionState" or "error"
+            || type?.StartsWith("authorizationState", StringComparison.Ordinal) == true)
+            _db.Changes.Publish();
     }
     internal static Observation ToObservation(Guid targetId, JsonObject status, DateTimeOffset at, string reason)
     {

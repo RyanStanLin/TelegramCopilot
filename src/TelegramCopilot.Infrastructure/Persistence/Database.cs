@@ -5,6 +5,7 @@ namespace TelegramCopilot.Infrastructure.Persistence;
 public sealed class Database
 {
     private readonly string _connection;
+    public Workers.RealtimeChanges Changes { get; } = new();
     public string DirectoryPath { get; }
     public Database(string dataPath)
     {
