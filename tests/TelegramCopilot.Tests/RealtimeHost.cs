@@ -32,6 +32,7 @@ internal sealed class RealtimeHost : IAsyncDisposable
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSingleton<IRealtimeChanges>(store.Database.Changes);
         builder.Services.AddSingleton<IOperationsService>(operations);
+        builder.Services.AddSingleton<ITelemetryService>(store.Analytics);
         builder.Services.AddSingleton<IMonitoringService>(new MonitoringService(store.Configs, Monitoring, operations,
             Telegram.Gateway, store.Analytics, store.Clock));
         builder.Services.AddSingleton<LiveSnapshots>(); builder.Services.AddSingleton<LiveConnection>();

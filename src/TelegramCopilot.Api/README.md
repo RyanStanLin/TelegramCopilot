@@ -112,6 +112,8 @@ GET /api/targets/{id}/export.csv?from=...&to=...&state=Online
 
 `from` 必须早于 `to`，最长 3660 天；page 1–1000000，pageSize 1–500。未来的结束时间裁到当前时刻。state 可省略，或 Online/Offline/Unknown。CSV 导出全部匹配记录，不仅当前页；为避免内存压力，超过约 100 MB 时请缩短时间范围。
 
+每日活动页通过现有 `/api/live` WebSocket 订阅 `/targets/{id}/timeline?from=...&to=...&page=1&pageSize=500` 和 `/targets/{id}/statistics?from=...&to=...&period=day&timeZone=Asia%2FTaipei&pageSize=7`。每次提交观测或检测结果后推送新快照，不用浏览器定时轮询。WebSocket 分析订阅限定只读、31 天以内、page 1–32、pageSize 1–500；完整路径最多 512 个字符，仍保留每连接 32 个订阅和原有帧、会话限制。未知参数、重复参数、无效时区或范围会返回 `InvalidSubscription`，不会执行账号登录或发送消息。历史 HTTP 查询和 CSV 的原有范围不变。
+
 统计 period 为 day/week/month/year，周从星期一开始。桶按指定时区划分，可跨 DST。返回 Totals 及分页 buckets，包含上线次数、在线/离线/未知秒数、完整会话平均时长和覆盖率。只统计观测到的上线边界；跨查询边界的持续会话贡献时长，但不会凭空增加次数。平均值只用完整落在范围内且两端可观测的会话。故次数和用于平均值的会话数可能不同。
 
 日志包含 startKnown/endKnown、observedAt、telegramAt，避免把观测时间、Telegram 服务器时间和查询裁剪边界混为一谈。删除监控配置后，仍可用原 ID 查询历史。详细语义见根目录 docs/presence.md。

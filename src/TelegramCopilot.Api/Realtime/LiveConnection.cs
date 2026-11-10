@@ -49,7 +49,7 @@ public sealed class LiveConnection(LiveSnapshots snapshots, IRealtimeChanges cha
                 Command? command;
                 try { command = JsonSerializer.Deserialize<Command>(buffer.AsSpan(0, length), json.Value.SerializerOptions); }
                 catch (JsonException) { await Reject(WebSocketCloseStatus.InvalidPayloadData); return; }
-                if (command is null || string.IsNullOrEmpty(command.Path) || command.Path.Length > 128
+                if (command is null || string.IsNullOrEmpty(command.Path) || command.Path.Length > 512
                     || command.Type is not ("subscribe" or "unsubscribe" or "refresh"))
                 { await Reject(WebSocketCloseStatus.PolicyViolation); return; }
                 if (command.Type == "unsubscribe") paths.TryRemove(command.Path, out _);
